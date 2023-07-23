@@ -98,7 +98,7 @@ To translate the markdown files into Finish (fi) versions, run this command:
 poetry run mdtranslate -p prompts -d example -sl en -tl fi
 ```
 
-And you should get a `/fi` subdirectory ./example-build/fi/ containing these files, translated from their original English (en) source:
+And you should get a `/fi` subdirectory ./example/fi/ containing these files, translated from their original English (en) source:
 
 -   index.md
 -   tietoja.md
