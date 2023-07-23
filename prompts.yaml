@@ -1,0 +1,84 @@
+MODEL:
+  temperature: 0.2
+  engine: gpt-3.5-turbo
+  # engine: gpt-3.5-turbo-16k
+  # max_tokens: 2048
+  # max_tokens: 4096
+
+ONLY_INDEXES: False
+
+# FIELD_KEYS:
+#   - title
+#   - heading
+#   - description
+#   - keywords
+#   - formIntro
+#   - bullets
+#   - teaser
+
+URL_PROMPT:
+  - role: system
+    prompt: |
+      Only reply in valid json.
+      No explanations. No notes.
+      Language: {lang[name]}
+      JSON document:
+      {content}
+  - role: user
+    prompt: |
+      Translate all keys in the JSON document.
+      The keys are in {lang[name]} ({lang[code]}).
+      They are url paths for a website in {lang[name]}.
+      I need you to fill out the missing values with a translated {target_lang[name]} ({target_lang[code]}) version.
+      Should contain no special characters (hyphens and slashes are ok, as are dots in file extensions (like .md) if any).
+      Respond in the same format as the JSON input given, with the `key` as the json key and the (translated) `value` as the value.
+      Example translating from English to Danish:
+      "about.md": "om-os.md"
+
+MARKDOWN_PROMPT:
+  - role: system
+    prompt: |
+      Only reply in valid markdown with frontmatter.
+      No explanations. No notes.
+      Language: {lang[name]}
+      Markdown Document:
+      ---
+      # Frontmatter can be anything or nothing
+      {frontmatter}
+      ---
+      {content}
+  - role: user
+    prompt: |
+      Translate all given values from {lang[name]} ({lang[code]}) to {target_lang[name]} ({target_lang[code]}).
+      Respond in valid markdown format.
+
+WEBSITE_BUILDER:
+  title: the fictive product "The AI Markdown Translator"
+  description:
+  system_prompt: |
+    Only reply in valid markdown with frontmatter.
+    No explanations. No notes.
+    Language: {lang[name]}
+    Markdown Document:
+    ---
+    # Frontmatter attributes:
+    title: Title of webpage
+    description: Short meta description
+    ---
+    <!-- markdown content -->
+  user_suffix: |
+    Respond in valid markdown format including all provided frontmatter attributes.
+
+  steps:
+    - prompt: |
+        Write the homepage content for {title} in {lang[name]} ({lang[code]}).
+      destination: index.md
+    - prompt: |
+        Write the "About Us" page content for a fictive team behind {title} in {lang[name]} ({lang[code]}).
+      destination: about.md
+    - prompt: |
+        Write the history for {title} in {lang[name]} ({lang[code]}), starting in 2019 with 5 major milestones.
+      destination: history.md
+    - prompt: |
+        Write a contact page for {title} in {lang[name]} ({lang[code]}). Make the headquarter be at some fancy addres in Silicon Valley.
+      destination: contact.md

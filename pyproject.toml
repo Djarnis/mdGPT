@@ -1,0 +1,39 @@
+[tool.blue]
+line-length = 120
+exclude = '''
+/(
+  | .git
+  | .terraform
+  | __pycache__
+  | dist
+  | venv
+)/
+'''
+
+[tool.poetry]
+name = "mdgpt"
+version = "0.1.0"
+description = "Translate and generate static site from Markdown files using ChatGTP"
+authors = ["Jeppe Bårris <jeppe@barris.dk>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-frontmatter = "^1.0.0"
+requests = "^2.31.0"
+pycountry = "^22.3.5"
+openai = "^0.27.8"
+rich = "^13.4.2"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.4.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+mdtranslate = 'mdgpt:translate'
+mdbuild = 'mdgpt:build'
+mdengines = 'mdgpt:engines'
