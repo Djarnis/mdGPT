@@ -17,64 +17,91 @@ from mdgpt.utils import (
 )
 
 
-def translate():
+def _translate():
     args = get_args()
-    prompt_cfg = load_prompt(f'{args.pfile}.yaml')
+    translate(
+        prompt=args.pfile,
+        language=args.lang,
+        target=args.target,
+        source_dir=args.source_dir,
+        root_dir=args.dir,
+        single_file=args.file,
+    )
+
+def translate(prompt: str, language: str=None, target: str=None, source_dir: str=None, root_dir: str=None, single_file: str=None):
+    prompt_cfg = load_prompt(f'{prompt}.yaml')
+
+    if language is None:
+        language = prompt_cfg['LANGUAGE']
+
+    if root_dir is None:
+        root_dir = prompt_cfg['ROOT_DIR']
 
     source_lang = {
-        'code': args.lang,
-        'name': get_language_name(args.lang),
-        'dir': args.source_dir if args.source_dir else args.lang,
-    }
-    target_lang = {
-        'code': args.target,
-        'name': get_language_name(args.target),
-        'dir': args.target_dir if args.target_dir else args.target,
+        'code': language,
+        'name': get_language_name(language),
+        'dir': source_dir if source_dir else language,
     }
 
-    print(f'Translating {source_lang["name"]} ({source_lang["code"]}) to {target_lang["name"]} ({target_lang["code"]})')
-
-    files = get_markdown_files(Path(args.dir, source_lang['dir']))
-    print('Files:', len(files))
-
-    # Translate urls
-    if prompt_cfg.get('ONLY_INDEXES'):
-        url_hash = {urlize(f): '' for f in files if f.endswith('index.md')}
+    if target is None:
+        targets = prompt_cfg.get('TARGET_LANGUAGES')
+        print('targets', targets)
     else:
-        url_hash = {urlize(f): '' for f in files}
+        targets = [target]
 
-    url_map, err = translate_json(prompt_cfg['URL_PROMPT'], url_hash, source_lang, target_lang, prompt_cfg.get('MODEL'), args.dir)
+    for target in targets:
 
-    if args.file:
-        print('Translating single file', args.file)
-        filtered_files = [args.file]
-    else:
-        filtered_files = filter_markdown_files(files, args.dir, target_lang['dir'], url_map)
-        print('filtered_files', len(filtered_files))
+        target_lang = {
+            'code': target,
+            'name': get_language_name(target),
+            # 'dir': args.target_dir if args.target_dir else target,
+            'dir': target,
+        }
 
-    counter = 0
-    prompt_tokens = 0
-    completion_tokens = 0
+        print(f'Translating {source_lang["name"]} ({source_lang["code"]}) to {target_lang["name"]} ({target_lang["code"]})')
 
-    for file in filtered_files:
-        print(f'Translating {file} ...', flush=True)   # end='\r',
-        if usage := translate_markdown_file(file, args.dir, source_lang, target_lang, url_map, prompt_cfg['MARKDOWN_PROMPT'], prompt_cfg.get('FIELD_KEYS'), prompt_cfg.get('MODEL')):
-            prompt_tokens += usage['prompt_tokens']
-            completion_tokens += usage['completion_tokens']
-            log_usage('translate', args.target, file, usage['prompt_tokens'], usage['completion_tokens'])
-            counter += 1
+        files = get_markdown_files(Path(root_dir, source_lang['dir']))
+        print('Files:', len(files))
 
+        # Translate urls
+        if prompt_cfg.get('ONLY_INDEXES'):
+            url_hash = {urlize(f): '' for f in files if f.endswith('index.md')}
         else:
-            print(f'Could not translate {file} ...')
+            url_hash = {urlize(f): '' for f in files}
 
-    print('')
-    print('counter', counter)
-    print('prompt_tokens', prompt_tokens)
-    print('completion_tokens', completion_tokens)
+        url_map, err = translate_json(prompt_cfg['URL_PROMPT'], url_hash, source_lang, target_lang, prompt_cfg.get('MODEL'), root_dir)
+
+        if single_file:
+            print('Translating single file', single_file)
+            filtered_files = [single_file]
+        else:
+            filtered_files = filter_markdown_files(files, root_dir, target_lang['dir'], url_map)
+            print('filtered_files', len(filtered_files))
+
+        counter = 0
+        prompt_tokens = 0
+        completion_tokens = 0
+
+        for file in filtered_files:
+            print(f'Translating {file} ...', flush=True)   # end='\r',
+            if usage := translate_markdown_file(file, root_dir, source_lang, target_lang, url_map, prompt_cfg['MARKDOWN_PROMPT'], prompt_cfg.get('FIELD_KEYS'), prompt_cfg.get('MODEL')):
+                prompt_tokens += usage['prompt_tokens']
+                completion_tokens += usage['completion_tokens']
+                log_usage('translate', target, file, usage['prompt_tokens'], usage['completion_tokens'])
+                counter += 1
+
+            else:
+                print(f'Could not translate {file} ...')
+
+        print('')
+        print('counter', counter)
+        print('prompt_tokens', prompt_tokens)
+        print('completion_tokens', completion_tokens)
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('prompt')
     parser.add_argument('-d', '--dir', dest='dir', type=str, required=True, help='Root directory for language subdirectories and files')
     parser.add_argument('-p', '--prompts', dest='pfile', type=str, required=True, help='Path to prompt configuration file without extension')
     parser.add_argument('-f', '--file', dest='file', type=str, required=False, help='Optional single file to translate')
@@ -213,7 +240,7 @@ def translate_markdown_file(file, root_dir, src, target, url_map, prompt_message
 def translate_json(prompt_messages, json_dict, src, target, gpt_model, root_dir, ignore_existing=True):
 
     filename = f'translater_urls_{src["code"]}_{target["code"]}.json'
-    src_file = Path(f'{root_dir}/_urls/{filename}')
+    src_file = Path(f'{root_dir}/.mdgpt-urls/{filename}')
 
     if src_file.exists():
         print(f'Loading existing file {src_file}')

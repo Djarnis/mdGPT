@@ -1,22 +1,20 @@
 import pytest
 from pathlib import Path
-
-from mdgpt import translate
+from mdgpt import cli
 
 
 @pytest.fixture
 def cli_args_da():
     return [
-        "-d", "./example-test",
-        "-p", "./tests/prompts",
-        "-sl", "en",
-        "-tl", "da",
+        "translate",
+        "tests/prompts",
+        "--target", "da",
     ]
 
 
 def test_translate(cli_args_da, monkeypatch):
     monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_da)
-    translate()
+    cli()
 
     indexfile = Path('./example-test/da/index.md')
     assert indexfile.exists()
@@ -25,16 +23,15 @@ def test_translate(cli_args_da, monkeypatch):
 @pytest.fixture
 def cli_args_de():
     return [
-        "-d", "./example-test",
-        "-p", "./prompts",
-        "-sl", "en",
-        "-tl", "de",
+        "translate",
+        "tests/prompts",
+        "--target", "de",
     ]
 
 
 def test_translate_de(cli_args_de, monkeypatch):
     monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_de)
-    translate()
+    cli()
 
     indexfile = Path('./example-test/de/index.md')
     assert indexfile.exists()
@@ -43,16 +40,15 @@ def test_translate_de(cli_args_de, monkeypatch):
 @pytest.fixture
 def cli_args_fr():
     return [
-        "-d", "./example-test",
-        "-p", "./prompts",
-        "-sl", "en",
-        "-tl", "fr",
+        "translate",
+        "tests/prompts",
+        "--target", "fr",
     ]
 
 
 def test_translate_fr(cli_args_fr, monkeypatch):
     monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_fr)
-    translate()
+    cli()
 
     indexfile = Path('./example-test/fr/index.md')
     assert indexfile.exists()

@@ -5,9 +5,9 @@ from rich import print
 
 
 def list_engines():
-    print('Listing engines ...', os.getenv('OPENAI_API_KEY'))
+    print('Listing engines ...')
     if os.getenv('OPENAI_API_KEY') is None:
-        print('Please set OPENAI_API_KEY and OPENAI_ORGANIZATION environment variables.')
+        print('Please set OPENAI_API_KEY environment variable.')
         exit(1)
 
     response = openai.Engine.list(api_key=os.getenv('OPENAI_API_KEY'))

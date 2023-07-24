@@ -2,7 +2,7 @@
 example-test/
 
 # Usage
-usage/
+.mdgpt-usage/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

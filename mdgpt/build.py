@@ -12,11 +12,16 @@ from mdgpt.utils import (
 )
 
 
-def build():
-    print('Building ...')
+def build(prompt: str, language: str=None, source_dir: str=None, root_dir: str=None):
+    print(f'Building {prompt} ...')
 
-    args = get_build_args()
-    prompt_cfg = load_prompt(f'{args.pfile}.yaml')
+    prompt_cfg = load_prompt(f'{prompt}.yaml')
+
+    if language is None:
+        language = prompt_cfg['LANGUAGE']
+
+    if root_dir is None:
+        root_dir = prompt_cfg['ROOT_DIR']
 
     cfg = prompt_cfg.get('WEBSITE_BUILDER')
     if cfg is None:
@@ -24,9 +29,9 @@ def build():
         exit(1)
 
     source_lang = {
-        'code': args.lang,
-        'name': get_language_name(args.lang),
-        'dir': args.source_dir if args.source_dir else args.lang,
+        'code': language,
+        'name': get_language_name(language),
+        'dir': source_dir if source_dir else language,
     }
 
     title = cfg.get('title', '')
@@ -54,7 +59,7 @@ def build():
             }
         ]
 
-        target_path = Path(args.dir, source_lang['dir'], step['destination'])
+        target_path = Path(root_dir, source_lang['dir'], step['destination'])
         if target_path.exists():
             print(f'File {target_path} exists. Skipping.')
             continue
@@ -76,12 +81,3 @@ def build():
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_text(frontmatter.dumps(post))
-
-
-def get_build_args():
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-d', '--dir', dest='dir', type=str, required=True, help='Root directory for language subdirectories and files')
-    parser.add_argument('-p', '--prompts', dest='pfile', type=str, required=True, help='Path to prompt configuration file without extension')
-    parser.add_argument('-l', '--lang', dest='lang', type=str, required=True, help='Source language in ISO 639-1 two-letter code')
-    parser.add_argument('-sd', '--source-dir', dest='source_dir', type=str, help='Optional Source directory. Defaults to lang')
-    return parser.parse_args()

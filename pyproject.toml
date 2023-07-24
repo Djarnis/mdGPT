@@ -12,10 +12,14 @@ exclude = '''
 
 [tool.poetry]
 name = "mdgpt"
-version = "0.1.0"
-description = "Translate and generate static site from Markdown files using ChatGTP"
+version = "0.2.0"
+description = "Translate markdown files using OpenAI ChatGPT, and generate localized copies of each file."
 authors = ["Jeppe Bårris <jeppe@barris.dk>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/Djarnis/mdGPT"
+repository = "https://github.com/Djarnis/mdGPT"
+keywords = ["markdown", "translation", "openai", "chatgpt", "gpt"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -34,6 +38,4 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-mdtranslate = 'mdgpt:translate'
-mdbuild = 'mdgpt:build'
-mdengines = 'mdgpt:engines'
+mdgpt = 'mdgpt:cli'

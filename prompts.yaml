@@ -3,18 +3,40 @@ MODEL:
   engine: gpt-3.5-turbo
   # engine: gpt-3.5-turbo-16k
   # max_tokens: 2048
+  # max_tokens: 3072
   # max_tokens: 4096
+  # 1024 * 8 8.192
 
-ONLY_INDEXES: False
+WEBSITE_BUILDER:
+  title: the fictive product "The AI Markdown Translator"
+  description:
+  system_prompt: |
+    Only reply in valid markdown with frontmatter.
+    No explanations. No notes.
+    Language: {lang[name]}
+    Markdown Document:
+    ---
+    # Frontmatter attributes:
+    title: "Title of webpage"
+    description: "Short meta description"
+    ---
+    <!-- markdown content -->
+  user_suffix: |
+    Respond in valid markdown format including all provided frontmatter attributes.
 
-# FIELD_KEYS:
-#   - title
-#   - heading
-#   - description
-#   - keywords
-#   - formIntro
-#   - bullets
-#   - teaser
+  steps:
+    - prompt: |
+        Write the homepage content for {title} in {lang[name]} ({lang[code]}).
+      destination: index.md
+    - prompt: |
+        Write the "About Us" page content for a fictive team behind {title} in {lang[name]} ({lang[code]}).
+      destination: about.md
+    - prompt: |
+        Write the history for {title} in {lang[name]} ({lang[code]}), starting in 2019 with 5 major milestones.
+      destination: history.md
+    - prompt: |
+        Write a contact page for {title} in {lang[name]} ({lang[code]}). Make the headquarter be at some fancy addres in Silicon Valley.
+      destination: contact.md
 
 URL_PROMPT:
   - role: system
@@ -43,7 +65,7 @@ MARKDOWN_PROMPT:
       Language: {lang[name]}
       Markdown Document:
       ---
-      # Frontmatter can be anything or nothing
+      # Frontmatter can be anything or nothing, but always make sure to include the frontmatter dashes.
       {frontmatter}
       ---
       {content}
@@ -52,33 +74,28 @@ MARKDOWN_PROMPT:
       Translate all given values from {lang[name]} ({lang[code]}) to {target_lang[name]} ({target_lang[code]}).
       Respond in valid markdown format.
 
-WEBSITE_BUILDER:
-  title: the fictive product "The AI Markdown Translator"
-  description:
-  system_prompt: |
-    Only reply in valid markdown with frontmatter.
-    No explanations. No notes.
-    Language: {lang[name]}
-    Markdown Document:
-    ---
-    # Frontmatter attributes:
-    title: Title of webpage
-    description: Short meta description
-    ---
-    <!-- markdown content -->
-  user_suffix: |
-    Respond in valid markdown format including all provided frontmatter attributes.
+# ONLY_INDEXES: False
 
-  steps:
-    - prompt: |
-        Write the homepage content for {title} in {lang[name]} ({lang[code]}).
-      destination: index.md
-    - prompt: |
-        Write the "About Us" page content for a fictive team behind {title} in {lang[name]} ({lang[code]}).
-      destination: about.md
-    - prompt: |
-        Write the history for {title} in {lang[name]} ({lang[code]}), starting in 2019 with 5 major milestones.
-      destination: history.md
-    - prompt: |
-        Write a contact page for {title} in {lang[name]} ({lang[code]}). Make the headquarter be at some fancy addres in Silicon Valley.
-      destination: contact.md
+# FIELD_KEYS:
+#   - title
+#   - heading
+#   - description
+#   - keywords
+#   - teaser
+
+LANGUAGE: en
+ROOT_DIR: example
+
+TARGET_LANGUAGES:
+  - da
+  - de
+  - fr
+  - es
+  - it
+  - nl
+  - pl
+  - pt
+  - ru
+  - sv
+  - tr
+  - zh

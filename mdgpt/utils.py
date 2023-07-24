@@ -13,7 +13,7 @@ def urlize(text):
 
 
 def log_usage(action, target, file, prompt_tokens, completion_tokens):
-    logger = Path(f'./usage/usage_{action}.csv')
+    logger = Path(f'./.mdgpt-usage/usage_{action}.csv')
     if not logger.exists():
         logger.parent.mkdir(parents=True, exist_ok=True)
         logger.write_text('target;file;prompt_tokens;completion_tokens\n')
