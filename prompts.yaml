@@ -9,7 +9,7 @@ MODEL:
 
 WEBSITE_BUILDER:
   title: the fictive product "The AI Markdown Translator"
-  description:
+  # description:
   system_prompt: |
     Only reply in valid markdown with frontmatter.
     No explanations. No notes.
