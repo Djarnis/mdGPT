@@ -59,15 +59,18 @@ def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_toke
 
     except openai.error.AuthenticationError as e:
         print(f'OpenAI AuthenticationError: {e}')
-        exit(1)
+        # exit(1)
+        raise e
 
     except openai.error.OpenAIError as e:
         print(f'OpenAI Error: {e}')
-        exit(1)
+        # exit(1)
+        raise e
 
     except Exception as e:
         print(f'An error occurred: {e}')
-        exit(1)
+        # exit(1)
+        raise e
 
 
 def get_gpt_options(gpt_model):
@@ -175,6 +178,32 @@ def get_markdown_files(path: Path):
     files = []
     for filepath in glob.iglob(f'{path}/**/*.md', recursive=True):
         relative_path = filepath[len(f'{path}'):]
+        if relative_path.endswith('README.md'):
+            continue
         files.append(relative_path.lstrip('/'))
     files.sort()
     return files
+
+
+class DefaultDictFormatter(dict):
+    def __missing__(self, key):
+        return MissingAttrHandler('{{{}'.format(key))
+
+
+class MissingAttrHandler(str):
+    def __init__(self, format):
+        self.format = format
+
+    def __getattr__(self, attr):
+        return type(self)('{}.{}'.format(self.format, attr))
+
+    def __repr__(self):
+        return MissingAttrHandler(self.format + '!r}')
+
+    def __str__(self):
+        return MissingAttrHandler(self.format + '!s}')
+
+    def __format__(self, format):
+        if self.format.endswith('}'):
+            self.format = self.format[:-1]
+        return '{}:{}}}'.format(self.format, format)

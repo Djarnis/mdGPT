@@ -7,12 +7,12 @@ MODEL:
   max_tokens: 2048
 
 WEBSITE_BUILDER:
-  title: the fictive product "AIMarkdownTranslator"
-  description: Translate markdown files for websites
+  variables:
+    title: the fictive product "AIMarkdownTranslator"
   system_prompt: |
     Only reply in valid markdown with frontmatter.
     No explanations. No notes.
-    Language: {lang[name]}
+    Language: {lang_name}
     Markdown Document:
     ---
     # Frontmatter attributes:
@@ -25,13 +25,13 @@ WEBSITE_BUILDER:
 
   steps:
     - prompt: |
-        Write the homepage content for {title} in {lang[name]} ({lang[code]}).
+        Write the homepage content for {title} in {lang_name} ({lang_code}).
       destination: index.md
     - prompt: |
-        Write the "About Us" page content for a fictive team behind {title} in {lang[name]} ({lang[code]}).
+        Write the "About Us" page content for a fictive team behind {title} in {lang_name} ({lang_code}).
       destination: about.md
     - prompt: |
-        Write the history for {title} in {lang[name]} ({lang[code]}), starting in 2019 with 5 major milestones.
+        Write the history for {title} in {lang_name} ({lang_code}), starting in 2019 with 5 major milestones.
       destination: history.md
 
 URL_PROMPT:
@@ -39,15 +39,15 @@ URL_PROMPT:
     prompt: |
       Only reply in valid json.
       No explanations. No notes.
-      Language: {lang[name]}
+      Language: {lang_name}
       JSON document:
       {content}
   - role: user
     prompt: |
       Translate all keys in the JSON document.
-      The keys are in {lang[name]} ({lang[code]}) (some in english though).
-      They are url paths for a website in {lang[name]}.
-      I need you to fill out the missing values with a translated {target_lang[name]} ({target_lang[code]}) version.
+      The keys are in {lang_name} ({lang_code}) (some in english though).
+      They are url paths for a website in {lang_name}.
+      I need you to fill out the missing values with a translated {target_lang_name} ({target_lang_code}) version.
       Should contain no special characters (hyphens and slashes are ok, as are dots in file extensions (like .md) if any).
       Respond in the same format as the JSON input given, with the `key` as the json key and the (translated) `value` as the value.
       Example translating from english to danish:
@@ -58,7 +58,7 @@ MARKDOWN_PROMPT:
     prompt: |
       Only reply in valid markdown with frontmatter.
       No explanations. No notes.
-      Language: {lang[name]}
+      Language: {lang_name}
       Markdown Document:
       ---
       # Frontmatter can be anything or nothing
@@ -67,5 +67,5 @@ MARKDOWN_PROMPT:
       {content}
   - role: user
     prompt: |
-      Translate all given values from {lang[name]} ({lang[code]}) to {target_lang[name]} ({target_lang[code]}).
+      Translate all given values from {lang_name} ({lang_code}) to {target_lang_name} ({target_lang_code}).
       Respond in valid markdown format.

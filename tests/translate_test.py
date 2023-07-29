@@ -2,6 +2,8 @@ import pytest
 from pathlib import Path
 from mdgpt import cli
 
+# pytest tests/translate_test.py -s
+
 
 def get_args(lang):
     return [

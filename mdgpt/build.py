@@ -12,12 +12,12 @@ from mdgpt.utils import (
     get_chat_response,
     get_gpt_options,
     get_language_name,
+    DefaultDictFormatter,
 )
 
 
-def build_step(prompt_cfg: PromptConfig, source_lang, step):
-
-    target_path = Path(prompt_cfg.ROOT_DIR, source_lang['dir'], step.destination)
+def build_step(prompt_cfg: PromptConfig, step):
+    target_path = Path(prompt_cfg.ROOT_DIR, prompt_cfg.LANG.directory, step.destination)
     if target_path.exists():
         skip = True
         if prompt_cfg.FILE:
@@ -29,23 +29,31 @@ def build_step(prompt_cfg: PromptConfig, source_lang, step):
 
     wcfg = prompt_cfg.WEBSITE_BUILDER
 
-    title = wcfg.title
-    description = wcfg.description
+    # title = wcfg.title
+    # description = wcfg.description
 
     user_suffix = wcfg.user_suffix.strip()
     system_prompt = wcfg.system_prompt.strip()
 
+    step_prompt = '\n'.join([
+        step.prompt.strip(),
+        user_suffix,
+    ])
+
+    variables = wcfg.variables
+
+    variables['lang_name'] = prompt_cfg.LANG.name
+    variables['lang_code'] = prompt_cfg.LANG.code
+
     messages = [
         {
             'role': 'system',
-            'content': system_prompt.format(lang=source_lang, title=title, description=description)
+            # 'content': system_prompt.format(lang=source_lang, **variables)
+            'content': system_prompt.format_map(DefaultDictFormatter(variables)).strip()
         },
         {
             'role': 'user',
-            'content': '\n'.join([
-                step.prompt.format(lang=source_lang, title=title).strip(),
-                user_suffix
-            ])
+            'content': step_prompt.format_map(DefaultDictFormatter(variables))
         }
     ]
 
@@ -55,8 +63,6 @@ def build_step(prompt_cfg: PromptConfig, source_lang, step):
         response, usage = get_chat_response(messages, **options)
 
     except Exception as e:
-        # raise Exception(f'Could not get response: {e}')
-        # print(f'Could not get response: {e}')
         return None, e
 
     try:
@@ -66,9 +72,7 @@ def build_step(prompt_cfg: PromptConfig, source_lang, step):
         # print(f'Could not parse: {e}. response: {response}')
         return usage, e
 
-    post = frontmatter.Post('')
-    post.content = new_content
-    post.metadata = new_matter
+    post = frontmatter.Post(new_content, **new_matter)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     target_path.write_text(frontmatter.dumps(post))
@@ -149,3 +153,5 @@ def get_build_tasks(website_builder_cfg: WebsiteBuilder):
     return steps
     # for i, step in enumerate(steps):
     #     ...
+
+

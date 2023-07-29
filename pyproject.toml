@@ -12,7 +12,7 @@ exclude = '''
 
 [tool.poetry]
 name = "mdgpt"
-version = "0.2.1"
+version = "0.3.0"
 description = "Translate markdown files using OpenAI ChatGPT, and generate localized copies of each file."
 authors = ["Jeppe Bårris <jeppe@barris.dk>"]
 license = "MIT"
@@ -30,6 +30,8 @@ openai = "^0.27.8"
 rich = "^13.4.2"
 python-dotenv = "^1.0.0"
 pydantic = "^2.0.3"
+Pillow = "^10.0.0"
+python-slugify = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"

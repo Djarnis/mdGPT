@@ -1,9 +1,17 @@
+import yaml
+import pycountry
+
 from pydantic_core.core_schema import FieldValidationInfo
 from pydantic import BaseModel, ValidationError, field_validator
 from typing import List, Optional
-import yaml
 
 from pathlib import Path
+
+
+class LangModel(BaseModel):
+    code: str
+    name: str
+    directory: str
 
 
 class ChatGPTModel(BaseModel):
@@ -29,6 +37,7 @@ class WebsiteBuilder(BaseModel):
     user_suffix: str=''
     system_prompt: str=''
     steps: List[ChatGPTStepPrompt]
+    variables: dict={}
 
 
 class PromptConfig(BaseModel):
@@ -43,6 +52,8 @@ class PromptConfig(BaseModel):
     ONLY_INDEXES: bool=False
     FILE: str=None
     FIELD_KEYS: List[str]=None
+    FIELD_KEYS_DELETE: List[str]=None
+    LANG: LangModel=None
 
     @field_validator('LANGUAGE')
     def language_must_be_iso(cls, v):
@@ -51,7 +62,22 @@ class PromptConfig(BaseModel):
         return v
 
 
-def get_prompt_config_from_yaml(prompt_file: str, **kwargs) -> PromptConfig:
+def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
+
+    def get_language_name(lang_code):
+        lang = None
+        try:
+            lang = pycountry.languages.get(alpha_2=lang_code)
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(1)
+
+        if lang is None:
+            print(f'Language {lang_code} not found.', lang)
+            exit(1)
+
+        return lang.name
+
     try:
         with open(f'{prompt_file}.yaml', 'r') as f:
             prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
@@ -82,4 +108,9 @@ def get_prompt_config_from_yaml(prompt_file: str, **kwargs) -> PromptConfig:
         print(e)
         exit(1)
 
+    cfg.LANG = LangModel(
+        code=cfg.LANGUAGE,
+        name=get_language_name(cfg.LANGUAGE),
+        directory=cfg.SOURCE_DIR or cfg.LANGUAGE
+    )
     return cfg

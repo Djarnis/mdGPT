@@ -1,4 +1,5 @@
 import argparse
+import frontmatter
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -8,15 +9,16 @@ from rich.progress import track
 
 from mdgpt.utils import log_usage
 from mdgpt.models import PromptConfig
-from mdgpt.models import get_prompt_config_from_yaml
+from mdgpt.models import get_prompt_config
 from mdgpt.build import get_build_tasks
 from mdgpt.build import build_step
-from mdgpt.translate import get_translation_tasks
 from mdgpt.utils import get_json_to_translate
-from mdgpt.translate import save_json_translated
 from mdgpt.utils import get_url_map
-from mdgpt.translate import translate_missing_json
 from mdgpt.utils import get_lang_dict
+from mdgpt.utils import get_markdown_files
+from mdgpt.translate import save_json_translated
+from mdgpt.translate import translate_missing_json
+from mdgpt.translate import get_translation_tasks
 from mdgpt.translate import translate_markdown_file
 from mdgpt.translate import get_target_file
 
@@ -27,7 +29,7 @@ load_dotenv()
 def cli():
 
     args = parse_args()
-    cfg = get_prompt_config_from_yaml(args.prompt, **vars(args))
+    cfg = get_prompt_config(args.prompt, **vars(args))
 
     source_lang = get_lang_dict(cfg.LANGUAGE)
     source_lang['dir'] = cfg.SOURCE_DIR if cfg.SOURCE_DIR else cfg.LANGUAGE
@@ -37,6 +39,13 @@ def cli():
 
     elif args.action == 'translate':
         _translate(cfg, source_lang)
+
+    elif args.action == 'image':
+        from mdgpt.image import create_image
+        create_image(cfg)
+
+    elif args.action == 'debug':
+        _debug(cfg)
 
     else:
         print('Unknown action')
@@ -70,22 +79,22 @@ def _build(cfg: PromptConfig, source_lang):
     total_tasks = len(tasks)
     print('Tasks:', len(tasks))
 
-    for i in track(range(len(tasks)), description="Building ..."):
+    for i in track(range(total_tasks), description="Building ..."):
         step = tasks[i]
 
         print_details = f'({i+1}/{total_tasks}) Writing {step.destination} ...'
         print(print_details, end='', flush=True)
 
-        usage, err = build_step(cfg, source_lang, step)
+        usage, err = build_step(cfg, step)
         if err:
-            print(f'[red]({print_details} ERROR:', err)
+            print(f'[red]{print_details} ERROR:', err)
             errors += 1
         else:
             if usage:
-                print(f'[green]({print_details} ok ;)')
+                print(f'[green]{print_details} ok ;)')
                 oks += 1
             else:
-                print(f'[yellow]({print_details} Skipped!')
+                print(f'[yellow]{print_details} Skipped!')
                 skips += 1
 
         if usage:
@@ -119,95 +128,96 @@ def _translate(cfg: PromptConfig, source_lang):
         lang_matrix[target] = get_lang_dict(target)
 
     # Execute translation tasks
-    for i in track(range(len(tasks)), description="Translating ..."):
-        task = tasks[i]
-        action, target, file = task.split(':')[:3]
+    try:
+        for i in track(range(total_tasks), description="Translating ..."):
+            task = tasks[i]
+            action, target, file = task.split(':')[:3]
 
-        if action == 'js':
+            if action == 'js':
 
-            url_map = url_matrix[target]
-            missing = missing_matrix[target]
-            target_lang = lang_matrix[target]
+                url_map = url_matrix[target]
+                missing = missing_matrix[target]
+                target_lang = lang_matrix[target]
 
-            print_details = f'({i+1}/{total_tasks}) Translating file urls -> {target} ...'
-            print(print_details, end='', flush=True)   # end='\r',
+                print_details = f'{i+1}/{total_tasks} Translating file urls {cfg.LANGUAGE} -> {target} ...'
+                print(print_details, end='', flush=True)   # end='\r',
 
-            if len(missing) == 0:
-                print(f'[yellow]{print_details} Skip!')
-                skips += 1
-
-            if len(missing) > 0:
-                missing_translations = translate_missing_json(cfg, missing, source_lang, target_lang)
-
-                # Backfill missing translations
-                for key, value in missing_translations.items():
-                    if value is not None and len(value) > 0:
-                        url_map[key] = value
-
-                # Save url_map ...
-                save_json_translated(cfg, url_map, target)
-                print(f'[green]{print_details} ok ;)')
-                oks += 1
-
-        elif action == 'md':
-
-            # Check if file exists
-            root = Path(cfg.ROOT_DIR)
-            target_path = get_target_file(file, root, target, url_matrix[target])
-
-            print_details = f'({i+1}/{total_tasks}) Translating {file} -> {target_path} ...'
-
-            print(print_details, end='', flush=True)   # end='\r',
-            if target_path.exists():
-                skip = True
-                if cfg.FILE:
-                    if cfg.FILE == file:
-                        skip = False
-
-                if skip:
-                    skips += 1
+                if len(missing) == 0:
                     print(f'[yellow]{print_details} Skip!')
-                    # time.sleep(0.1)
-                    continue
+                    skips += 1
 
-            # if usage := translate_markdown_file(file, prompt_cfg.ROOT_DIR, source_lang, target_lang, url_map, prompt_cfg.MARKDOWN_PROMPT, prompt_cfg.FIELD_KEYS, prompt_cfg.MODEL):
-            if usage := translate_markdown_file(cfg, file, source_lang, target_lang, url_matrix[target]):
-                prompt_tokens += usage['prompt_tokens']
-                completion_tokens += usage['completion_tokens']
-                log_usage('translate_md', target, file, usage['prompt_tokens'], usage['completion_tokens'])
+                if len(missing) > 0:
+                    missing_translations = translate_missing_json(cfg, missing, source_lang, target_lang)
 
-                oks += 1
+                    # Backfill missing translations
+                    for key, value in missing_translations.items():
+                        if value is not None and len(value) > 0:
+                            url_map[key] = value
 
-                print(f'[green]{print_details} ok!')
-                # print('ok')
+                    # Save url_map ...
+                    save_json_translated(cfg, url_map, target)
+                    print(f'[green]{print_details} ok ;)')
+                    oks += 1
 
-            else:
-                errors += 1
-                print(f'[red]{print_details} error!')
-                # print(f'Error...', end='\n')  # end='\r'
+            elif action == 'md':
 
-        # time.sleep(0.1)  # Simulate work being done
+                # Check if file exists
+                root = Path(cfg.ROOT_DIR)
+                target_path = get_target_file(file, root, target, url_matrix[target])
 
-    # with Progress() as progress:
-    #     task = progress.add_task("twiddling thumbs", total=len(tasks))
-    #     for job in range(len(tasks)):
-    #         progress.console.print(f"Working on job #{job}")
-    #         # run_job(job)
-    #         time.sleep(0.1)
-    #         progress.advance(task)
+                print_details = f'{i+1}/{total_tasks} Translating {target_path} ...'
 
-    # text_column = TextColumn("{task.description}", table_column=Column(ratio=1))
-    # bar_column = BarColumn(bar_width=None, table_column=Column(ratio=2))
-    # progress = Progress(text_column, bar_column, expand=True)
+                print(print_details, end='', flush=True)   # end='\r',
+                if target_path.exists():
+                    skip = True
+                    if cfg.FILE:
+                        if cfg.FILE == file:
+                            skip = False
 
-    # with progress:
-    #     for n in progress.track(range(100)):
-    #         progress.print(n)
-    #         time.sleep(0.08)
+                    if skip:
+                        skips += 1
+                        print(f'[yellow]{print_details} Skip!')
+                        continue
 
+                if usage := translate_markdown_file(cfg, file, source_lang, target_lang, url_matrix[target]):
+                    prompt_tokens += usage['prompt_tokens']
+                    completion_tokens += usage['completion_tokens']
+                    log_usage('translate_md', target, file, usage['prompt_tokens'], usage['completion_tokens'])
+
+                    oks += 1
+
+                    print(f'[green]{print_details} ok!')
+
+                else:
+                    errors += 1
+                    print(f'[red]{print_details} error!')
+    except KeyboardInterrupt:
+        print('Interrupted!')
+    except Exception as e:
+        print('An error occurred:', e)
+
+    print('---')
     print('prompt_tokens:', prompt_tokens)
     print('completion_tokens:', completion_tokens)
-
+    print('---')
+    print(f'[bold]Tasks: {total_tasks}')
     print(f'[yellow]skips: {skips}')
     print(f'[green]oks: {oks}')
     print(f'[red]errors: {errors}')
+
+
+def _debug(cfg: PromptConfig):
+    print(f'cfg:', cfg)
+
+    unique_matters = []
+    matters = []
+    root_path = Path(cfg.ROOT_DIR, cfg.SOURCE_DIR or cfg.LANGUAGE)
+    files = get_markdown_files(root_path)
+    for file in files:
+        content = Path(root_path, file).read_text()
+        matter = frontmatter.loads(content)
+        for k, v in matter.metadata.items():
+            if k not in unique_matters:
+                unique_matters.append(k)
+
+    print('unique_matters:', sorted(unique_matters))

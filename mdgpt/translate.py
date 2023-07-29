@@ -1,5 +1,3 @@
-import argparse
-import glob
 import json
 import frontmatter
 import yaml
@@ -16,24 +14,20 @@ from mdgpt.utils import (
     load_prompt,
     get_chat_response,
     get_gpt_options,
-    get_language_name
+    get_language_name,
+    get_markdown_files,
 )
 
 
 def get_translation_tasks(prompt_cfg: PromptConfig):
-    source_lang = get_lang_dict(prompt_cfg.LANGUAGE)
-    source_lang['dir'] = prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE
-
     tasks = []
     for target in prompt_cfg.TARGET_LANGUAGES:
-        # target_lang = get_lang_dict(target)
-
         url_hash = get_url_map(prompt_cfg)
-
         tasks.append(f'js:{target}:{prompt_cfg.LANGUAGE}_{target}')
 
         if prompt_cfg.FILE:
             tasks.append(f'md:{target}:{prompt_cfg.FILE}' )
+            continue
         else:
             for k, v in url_hash.items():
                 if not k.endswith('.md'):
@@ -43,6 +37,17 @@ def get_translation_tasks(prompt_cfg: PromptConfig):
                         k = f'{k}index.md'
                 tasks.append(f'md:{target}:{k}')
             # tasks.extend([f'md:{target}:{k}' for k, v in url_hash.items()])
+
+        files = get_markdown_files(Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR or prompt_cfg.LANGUAGE))
+        for f in files:
+            if f.endswith('README.md'):
+                continue
+
+            if f.endswith('index.md'):
+                f = f.rstrip('index.md').rstrip('/')
+
+            if url_hash.get(f) is None:
+                tasks.append(f'md:{target}:{f}')
 
     return tasks
 
@@ -104,7 +109,7 @@ def translate(prompt_cfg: PromptConfig):
         print('completion_tokens', completion_tokens)
 
 
-def generate_frontmatter(post, field_keys):
+def generate_frontmatter(post, field_keys, field_keys_delete=None):
     field_dict = {}
     if field_keys is not None and len(field_keys) > 0:
         for field in field_keys:
@@ -114,18 +119,29 @@ def generate_frontmatter(post, field_keys):
                     field_dict[field] = field_value
     else:
         field_dict = post.metadata
+
+    if field_keys_delete is not None and len(field_keys_delete) > 0:
+        for field in field_keys_delete:
+            if field in field_dict.keys():
+                del field_dict[field]
+
     frontmatter = yaml.dump(field_dict)
     return frontmatter
 
 
-def generate_md_promt(prompt_messages, post, lang, target_lang, field_keys):
-    frontmatter = generate_frontmatter(post, field_keys)
+def generate_md_promt(prompt_messages, post, lang, target_lang, field_keys, field_keys_delete=None):
+    frontmatter = generate_frontmatter(post, field_keys, field_keys_delete)
+
     return [
         {
             'role': msg.role,
             'content': msg.prompt.format(
                 lang=lang,
+                lang_name=lang['name'],
+                lang_code=lang['code'],
                 target_lang=target_lang,
+                target_lang_name=target_lang['name'],
+                target_lang_code=target_lang['code'],
                 frontmatter=frontmatter,
                 content=post.content
             )
@@ -181,8 +197,6 @@ def filter_markdown_files(files, root, target_dir, url_map):
     return filtered_files
 
 
-
-
 def translate_markdown_file(prompt_cfg: PromptConfig, file, src, target, url_map, ignore_existing=True):
     root = Path(prompt_cfg.ROOT_DIR)
 
@@ -193,7 +207,7 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, src, target, url_map
         post = frontmatter.load(f)
 
     target_path = get_target_file(file, root, trg_dir, url_map)
-    messages = generate_md_promt(prompt_cfg.MARKDOWN_PROMPT, post, src, target, prompt_cfg.FIELD_KEYS)
+    messages = generate_md_promt(prompt_cfg.MARKDOWN_PROMPT, post, src, target, prompt_cfg.FIELD_KEYS, prompt_cfg.FIELD_KEYS_DELETE)
     options = get_gpt_options(prompt_cfg.MODEL)
 
     try:
@@ -212,6 +226,11 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, src, target, url_map
         return
 
     post.content = new_content
+
+    if prompt_cfg.FIELD_KEYS_DELETE is not None and len(prompt_cfg.FIELD_KEYS_DELETE) > 0:
+        for field in prompt_cfg.FIELD_KEYS_DELETE:
+            if post.get(field):
+                del post[field]
 
     if prompt_cfg.FIELD_KEYS is not None and len(prompt_cfg.FIELD_KEYS) > 0:
         for field in prompt_cfg.FIELD_KEYS:
@@ -240,7 +259,14 @@ def translate_missing_json(prompt_cfg: PromptConfig, json_dict, src, target):
     messages = [
         {
             'role': msg.role,
-            'content': msg.prompt.format(lang=src, target_lang=target, content=json.dumps(json_dict, indent=2))
+            'content': msg.prompt.format(
+                lang=src,
+                lang_name=src['name'],
+                lang_code=src['code'],
+                target_lang=target,
+                target_lang_name=target['name'],
+                target_lang_code=target['code'],
+                content=json.dumps(json_dict, indent=2))
         }
         for msg in prompt_cfg.URL_PROMPT
     ]
