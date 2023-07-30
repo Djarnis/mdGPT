@@ -32,9 +32,6 @@ def cli():
     args = parse_args()
     cfg = get_prompt_config(args.prompt, **vars(args))
 
-    source_lang = get_lang_dict(cfg.LANGUAGE)
-    source_lang['dir'] = cfg.SOURCE_DIR if cfg.SOURCE_DIR else cfg.LANGUAGE
-
     funcs = {
         'build': _build,
         'translate': _translate,
@@ -53,11 +50,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Build and translate markdown files from a prompt configuration file')
     parser.add_argument('action', type=str, help='Action to perform')
     parser.add_argument('prompt', type=str, help='Path to prompt configuration file without extension')
-    parser.add_argument('-d', '--dir', dest='dir', type=str, required=False, help='Root directory for language subdirectories and files')
+    parser.add_argument('-d', '--dir', dest='dir', type=str, required=False, help='Root directory for language files')
     parser.add_argument('-f', '--file', dest='file', type=str, required=False, help='Optional single file to translate')
-    parser.add_argument('-l', '--lang', dest='lang', type=str, required=False, help='Source language in ISO 639-1 two-letter code')
-    parser.add_argument('-s', '--source-dir', dest='source_dir', type=str, help='Optional Source directory. Defaults to lang')
-    parser.add_argument('-t', '--target', dest='target', type=str, required=False, help='Target language in ISO 639-1 two-letter code')
+    parser.add_argument('-l', '--lang', dest='lang', type=str, required=False, help='Src lang in ISO 639-1 2-letter code')
+    parser.add_argument('-s', '--source-dir', dest='source_dir', type=str, help='Optional src dir. Defaults to lang')
+    parser.add_argument('-t', '--target', dest='target', type=str, required=False, help='Target lang in ISO 639-1')
 
     return parser.parse_args()
 
@@ -76,7 +73,7 @@ def _build(cfg: PromptConfig):
     tasks = get_build_tasks(wcfg)
     total_tasks = len(tasks)
 
-    for i in track(range(total_tasks), description="Building ..."):
+    for i in track(range(total_tasks), description='Building ...'):
         step = tasks[i]
 
         print_details = f'({i+1}/{total_tasks}) Writing {step.destination} ...'
@@ -126,14 +123,22 @@ def _translate(cfg: PromptConfig):
 
     # Execute translation tasks
     try:
-        for i in track(range(total_tasks), description="Translating ..."):
+        for i in track(range(total_tasks), description='Translating ...'):
             task = tasks[i]
             action, target, file = task.split(':')[:3]
 
             target_lang = lang_matrix[target]
 
             if action == 'js':
-                result, usage = _translate_js(cfg, i, target, total_tasks, url_matrix[target], missing_matrix[target], lang_matrix[target],)
+                result, usage = _translate_js(
+                    cfg,
+                    i,
+                    target,
+                    total_tasks,
+                    url_matrix[target],
+                    missing_matrix[target],
+                    lang_matrix[target],
+                )
             elif action == 'md':
                 result, usage = _translate_md(cfg, i, total_tasks, file, target, target_lang, url_matrix[target])
 
@@ -218,10 +223,9 @@ def _translate_md(cfg: PromptConfig, i, total_tasks, file, target, target_lang, 
 
 
 def _debug(cfg: PromptConfig):
-    print(f'cfg:', cfg)
+    print('cfg:', cfg)
 
     unique_matters = []
-    matters = []
     root_path = Path(cfg.ROOT_DIR, cfg.SOURCE_DIR or cfg.LANGUAGE)
     files = get_markdown_files(root_path)
     for file in files:

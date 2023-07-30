@@ -14,5 +14,5 @@ def cli_args():
 
 
 def test_create_image(cli_args, monkeypatch):
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args)
     cli()

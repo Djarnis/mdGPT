@@ -37,7 +37,7 @@ def load_prompt(prompt_file):
     return prompt
 
 
-def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_tokens=1024*2, n=1):
+def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_tokens=1024 * 2, n=1):
     if os.getenv('OPENAI_API_KEY') is None:
         print('Please set OPENAI_API_KEY and OPENAI_ORGANIZATION environment variables.')
         exit(1)
@@ -112,7 +112,9 @@ def get_language_name(lang_code):
 
 
 def get_url_map(prompt_cfg: PromptConfig):
-    files = get_markdown_files(Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE))
+    files = get_markdown_files(
+        Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE)
+    )
     # print('Files:', prompt_cfg.LANGUAGE, len(files))
 
     # Translate urls
@@ -148,7 +150,6 @@ def get_json_to_translate(prompt_cfg: PromptConfig, json_dict, target):
             if src_json.get(k):
                 json_dict[k] = src_json.get(k)
 
-
     if json_dict.get(''):
         del json_dict['']
 
@@ -177,7 +178,7 @@ def get_lang_dict(lang):
 def get_markdown_files(path: Path):
     files = []
     for filepath in glob.iglob(f'{path}/**/*.md', recursive=True):
-        relative_path = filepath[len(f'{path}'):]
+        relative_path = filepath[len(f'{path}') :]
         if relative_path.endswith('README.md'):
             continue
         files.append(relative_path.lstrip('/'))

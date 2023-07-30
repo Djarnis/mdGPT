@@ -12,7 +12,7 @@ def cli_args():
 
 
 def test_build(cli_args, monkeypatch):
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args)
     cli()
 
     indexfile = Path('./example-test/en/index.md')
@@ -35,7 +35,7 @@ def test_build_file(cli_args_file, monkeypatch):
     if file_path.exists():
         file_path.unlink()
 
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_file)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_file)
     cli()
 
     indexfile = Path(target_path)

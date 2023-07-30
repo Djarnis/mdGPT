@@ -9,7 +9,8 @@ def get_args(lang):
     return [
         'translate',
         'tests/prompts',
-        '--target', lang,
+        '--target',
+        lang,
     ]
 
 
@@ -19,7 +20,7 @@ def cli_args_da():
 
 
 def test_translate(cli_args_da, monkeypatch):
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_da)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_da)
     cli()
 
     indexfile = Path('./example-test/da/index.md')
@@ -42,7 +43,7 @@ def test_translate_file(cli_args_da_file, monkeypatch):
         if file_path.exists():
             file_path.unlink()
 
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_da_file)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_da_file)
     cli()
 
     indexfile = Path(target_path)
@@ -58,7 +59,7 @@ def cli_args_de():
 
 
 def test_translate_de(cli_args_de, monkeypatch):
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_de)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_de)
     cli()
 
     indexfile = Path('./example-test/de/index.md')
@@ -71,7 +72,7 @@ def cli_args_fr():
 
 
 def test_translate_fr(cli_args_fr, monkeypatch):
-    monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_fr)
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_fr)
     cli()
 
     indexfile = Path('./example-test/fr/index.md')

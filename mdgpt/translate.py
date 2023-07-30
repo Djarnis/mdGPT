@@ -6,12 +6,10 @@ from pathlib import Path
 from rich import print
 
 from mdgpt.models import PromptConfig
-from mdgpt.utils import get_lang_dict
 from mdgpt.utils import get_url_map
 from mdgpt.utils import (
     urlize,
     log_usage,
-    load_prompt,
     get_chat_response,
     get_gpt_options,
     get_language_name,
@@ -26,7 +24,7 @@ def get_translation_tasks(prompt_cfg: PromptConfig):
         tasks.append(f'js:{target}:{prompt_cfg.LANGUAGE}_{target}')
 
         if prompt_cfg.FILE:
-            tasks.append(f'md:{target}:{prompt_cfg.FILE}' )
+            tasks.append(f'md:{target}:{prompt_cfg.FILE}')
             continue
         else:
             for k, v in url_hash.items():
@@ -67,7 +65,9 @@ def translate(prompt_cfg: PromptConfig):
             'dir': target,
         }
 
-        print(f'Translating {source_lang["name"]} ({source_lang["code"]}) to {target_lang["name"]} ({target_lang["code"]}) ...')
+        print(
+            f'Translating {source_lang["name"]} ({source_lang["code"]}) to {target_lang["name"]} ({target_lang["code"]}) ...'
+        )
 
         files = get_markdown_files(Path(prompt_cfg.ROOT_DIR, source_lang['dir']))
         print('Files:', len(files))
@@ -143,9 +143,10 @@ def generate_md_promt(prompt_messages, post, lang, target_lang, field_keys, fiel
                 target_lang_name=target_lang['name'],
                 target_lang_code=target_lang['code'],
                 frontmatter=frontmatter,
-                content=post.content
-            )
-        } for msg in prompt_messages
+                content=post.content,
+            ),
+        }
+        for msg in prompt_messages
     ]
 
 
@@ -206,7 +207,9 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ign
         post = frontmatter.load(f)
 
     target_path = get_target_file(file, root, trg_dir, url_map)
-    messages = generate_md_promt(prompt_cfg.MARKDOWN_PROMPT, post, prompt_cfg.LANG, target, prompt_cfg.FIELD_KEYS, prompt_cfg.FIELD_KEYS_DELETE)
+    messages = generate_md_promt(
+        prompt_cfg.MARKDOWN_PROMPT, post, prompt_cfg.LANG, target, prompt_cfg.FIELD_KEYS, prompt_cfg.FIELD_KEYS_DELETE
+    )
     options = get_gpt_options(prompt_cfg.MODEL)
 
     try:
@@ -215,7 +218,6 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ign
         # raise Exception(f'Could not get response for {file}: {e}')
         print(f'Could not get response for {file}: {e}')
         return
-
 
     try:
         new_matter, new_content = frontmatter.parse(response)
@@ -244,8 +246,6 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ign
     return usage
 
 
-
-
 def save_json_translated(prompt_cfg: PromptConfig, json_dict, target):
     filename = f'{prompt_cfg.LANGUAGE}_{target}.json'
     src_file = Path(f'{prompt_cfg.ROOT_DIR}/.mdgpt-urls/{filename}')
@@ -265,17 +265,25 @@ def translate_missing_json(prompt_cfg: PromptConfig, json_dict, target):
                 target_lang=target,
                 target_lang_name=target['name'],
                 target_lang_code=target['code'],
-                content=json.dumps(json_dict, indent=2))
+                content=json.dumps(json_dict, indent=2),
+            ),
         }
         for msg in prompt_cfg.URL_PROMPT
     ]
     options = get_gpt_options(prompt_cfg.MODEL)
     response, usage = get_chat_response(messages, **options)
-    log_usage('translate_json', target['code'], f'{prompt_cfg.LANG.code}_{target["code"]}', usage['prompt_tokens'], usage['completion_tokens'])
+    log_usage(
+        'translate_json',
+        target['code'],
+        f'{prompt_cfg.LANG.code}_{target["code"]}',
+        usage['prompt_tokens'],
+        usage['completion_tokens'],
+    )
 
     response_json = json.loads(response)
 
     return response_json, usage
+
 
 def translate_json(prompt_cfg: PromptConfig, json_dict, src, target, ignore_existing=True):
 
@@ -310,7 +318,7 @@ def translate_json(prompt_cfg: PromptConfig, json_dict, src, target, ignore_exis
     messages = [
         {
             'role': msg.role,
-            'content': msg.prompt.format(lang=src, target_lang=target, content=json.dumps(json_dict, indent=2))
+            'content': msg.prompt.format(lang=src, target_lang=target, content=json.dumps(json_dict, indent=2)),
         }
         for msg in prompt_cfg.URL_PROMPT
     ]

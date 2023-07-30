@@ -1,4 +1,3 @@
-import argparse
 import frontmatter
 
 from pathlib import Path
@@ -8,7 +7,6 @@ from mdgpt.models import PromptConfig
 from mdgpt.models import WebsiteBuilder
 
 from mdgpt.utils import (
-    load_prompt,
     get_chat_response,
     get_gpt_options,
     get_language_name,
@@ -35,10 +33,12 @@ def build_step(prompt_cfg: PromptConfig, step):
     user_suffix = wcfg.user_suffix.strip()
     system_prompt = wcfg.system_prompt.strip()
 
-    step_prompt = '\n'.join([
-        step.prompt.strip(),
-        user_suffix,
-    ])
+    step_prompt = '\n'.join(
+        [
+            step.prompt.strip(),
+            user_suffix,
+        ]
+    )
 
     variables = wcfg.variables
 
@@ -49,12 +49,9 @@ def build_step(prompt_cfg: PromptConfig, step):
         {
             'role': 'system',
             # 'content': system_prompt.format(lang=source_lang, **variables)
-            'content': system_prompt.format_map(DefaultDictFormatter(variables)).strip()
+            'content': system_prompt.format_map(DefaultDictFormatter(variables)).strip(),
         },
-        {
-            'role': 'user',
-            'content': step_prompt.format_map(DefaultDictFormatter(variables))
-        }
+        {'role': 'user', 'content': step_prompt.format_map(DefaultDictFormatter(variables))},
     ]
 
     options = get_gpt_options(prompt_cfg.MODEL)
@@ -105,17 +102,11 @@ def build(prompt_cfg: PromptConfig):
         print(f'Building step {i+1}: {step.destination} ...')
 
         messages = [
-            {
-                'role': 'system',
-                'content': system_prompt.format(lang=source_lang, title=title, description=description)
-            },
+            {'role': 'system', 'content': system_prompt.format(lang=source_lang, title=title, description=description)},
             {
                 'role': 'user',
-                'content': '\n'.join([
-                    step.prompt.format(lang=source_lang, title=title).strip(),
-                    user_suffix
-                ])
-            }
+                'content': '\n'.join([step.prompt.format(lang=source_lang, title=title).strip(), user_suffix]),
+            },
         ]
 
         target_path = Path(prompt_cfg.ROOT_DIR, source_lang['dir'], step.destination)
@@ -153,5 +144,3 @@ def get_build_tasks(website_builder_cfg: WebsiteBuilder):
     return steps
     # for i, step in enumerate(steps):
     #     ...
-
-

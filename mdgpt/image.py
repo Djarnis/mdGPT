@@ -12,7 +12,7 @@ from mdgpt.models import PromptConfig
 
 
 def create_image(prompt_cfg: PromptConfig):
-    prompt = "Photo realistic white male human in a suit with a tie and a hat."
+    prompt = 'Photo realistic white male human in a suit with a tie and a hat.'
     prompt_slug = slugify(prompt)
 
     response = openai.Image.create(
@@ -30,11 +30,7 @@ def create_image(prompt_cfg: PromptConfig):
         hash_hex = _get_md5_hash(url)
         img_slug = f'{prompt_cfg.ROOT_DIR}/images/{prompt_slug}-{i}-{hash_hex}.jpg'
 
-        img_path = Path(
-            prompt_cfg.ROOT_DIR,
-            'images',
-            f'{prompt_slug}-{i}-{hash_hex}.jpg'
-        )
+        img_path = Path(prompt_cfg.ROOT_DIR, 'images', f'{prompt_slug}-{i}-{hash_hex}.jpg')
         img_path.parent.mkdir(parents=True, exist_ok=True)
 
         response = requests.get(url)

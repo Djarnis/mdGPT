@@ -1,11 +1,8 @@
 import yaml
 import pycountry
 
-from pydantic_core.core_schema import FieldValidationInfo
 from pydantic import BaseModel, ValidationError, field_validator
-from typing import List, Optional
-
-from pathlib import Path
+from typing import List
 
 
 class LangModel(BaseModel):
@@ -15,45 +12,45 @@ class LangModel(BaseModel):
 
 
 class ChatGPTModel(BaseModel):
-    temperature: float=0.2
-    engine: str='gpt-3.5-turbo'
-    max_tokens: int=1024*2
+    temperature: float = 0.2
+    engine: str = 'gpt-3.5-turbo'
+    max_tokens: int = 1024 * 2
 
 
 class ChatGPTPrompt(BaseModel):
-    role: str='user'
+    role: str = 'user'
     prompt: str
 
 
 class ChatGPTStepPrompt(BaseModel):
-    role: str='user'
+    role: str = 'user'
     prompt: str
     destination: str
 
 
 class WebsiteBuilder(BaseModel):
-    title: str=''
-    description: str=''
-    user_suffix: str=''
-    system_prompt: str=''
+    title: str = ''
+    description: str = ''
+    user_suffix: str = ''
+    system_prompt: str = ''
     steps: List[ChatGPTStepPrompt]
-    variables: dict={}
+    variables: dict = {}
 
 
 class PromptConfig(BaseModel):
-    LANGUAGE: str=None
-    ROOT_DIR: str=None
-    SOURCE_DIR: str=None
-    TARGET_LANGUAGES: List[str]=[]
-    MODEL: ChatGPTModel=None
-    WEBSITE_BUILDER: WebsiteBuilder=None
+    LANGUAGE: str = None
+    ROOT_DIR: str = None
+    SOURCE_DIR: str = None
+    TARGET_LANGUAGES: List[str] = []
+    MODEL: ChatGPTModel = None
+    WEBSITE_BUILDER: WebsiteBuilder = None
     URL_PROMPT: List[ChatGPTPrompt]
     MARKDOWN_PROMPT: List[ChatGPTPrompt]
-    ONLY_INDEXES: bool=False
-    FILE: str=None
-    FIELD_KEYS: List[str]=None
-    FIELD_KEYS_DELETE: List[str]=None
-    LANG: LangModel=None
+    ONLY_INDEXES: bool = False
+    FILE: str = None
+    FIELD_KEYS: List[str] = None
+    FIELD_KEYS_DELETE: List[str] = None
+    LANG: LangModel = None
 
     @field_validator('LANGUAGE')
     def language_must_be_iso(cls, v):
@@ -63,7 +60,6 @@ class PromptConfig(BaseModel):
 
 
 def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
-
     def get_language_name(lang_code):
         lang = None
         try:
@@ -109,8 +105,6 @@ def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
         exit(1)
 
     cfg.LANG = LangModel(
-        code=cfg.LANGUAGE,
-        name=get_language_name(cfg.LANGUAGE),
-        directory=cfg.SOURCE_DIR or cfg.LANGUAGE
+        code=cfg.LANGUAGE, name=get_language_name(cfg.LANGUAGE), directory=cfg.SOURCE_DIR or cfg.LANGUAGE
     )
     return cfg
