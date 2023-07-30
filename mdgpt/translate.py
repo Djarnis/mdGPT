@@ -136,9 +136,9 @@ def generate_md_promt(prompt_messages, post, lang, target_lang, field_keys, fiel
         {
             'role': msg.role,
             'content': msg.prompt.format(
-                lang=lang,
-                lang_name=lang['name'],
-                lang_code=lang['code'],
+                # lang=lang,
+                lang_name=lang.name,
+                lang_code=lang.code,
                 target_lang=target_lang,
                 target_lang_name=target_lang['name'],
                 target_lang_code=target_lang['code'],
@@ -197,17 +197,16 @@ def filter_markdown_files(files, root, target_dir, url_map):
     return filtered_files
 
 
-def translate_markdown_file(prompt_cfg: PromptConfig, file, src, target, url_map, ignore_existing=True):
+def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ignore_existing=True):
     root = Path(prompt_cfg.ROOT_DIR)
 
-    src_code, src_name, src_dir = src['code'], src['name'], src['dir']
-    trg_code, trg_name, trg_dir = target['code'], target['name'], target['dir']
+    trg_dir = target['dir']
 
-    with open(root / src_dir / file) as f:
+    with open(root / prompt_cfg.LANG.directory / file) as f:
         post = frontmatter.load(f)
 
     target_path = get_target_file(file, root, trg_dir, url_map)
-    messages = generate_md_promt(prompt_cfg.MARKDOWN_PROMPT, post, src, target, prompt_cfg.FIELD_KEYS, prompt_cfg.FIELD_KEYS_DELETE)
+    messages = generate_md_promt(prompt_cfg.MARKDOWN_PROMPT, post, prompt_cfg.LANG, target, prompt_cfg.FIELD_KEYS, prompt_cfg.FIELD_KEYS_DELETE)
     options = get_gpt_options(prompt_cfg.MODEL)
 
     try:
@@ -255,14 +254,14 @@ def save_json_translated(prompt_cfg: PromptConfig, json_dict, target):
     src_file.write_text(json.dumps(json_dict, indent=2))
 
 
-def translate_missing_json(prompt_cfg: PromptConfig, json_dict, src, target):
+def translate_missing_json(prompt_cfg: PromptConfig, json_dict, target):
     messages = [
         {
             'role': msg.role,
             'content': msg.prompt.format(
-                lang=src,
-                lang_name=src['name'],
-                lang_code=src['code'],
+                # lang=src,
+                lang_name=prompt_cfg.LANG.name,
+                lang_code=prompt_cfg.LANG.code,
                 target_lang=target,
                 target_lang_name=target['name'],
                 target_lang_code=target['code'],
@@ -272,11 +271,11 @@ def translate_missing_json(prompt_cfg: PromptConfig, json_dict, src, target):
     ]
     options = get_gpt_options(prompt_cfg.MODEL)
     response, usage = get_chat_response(messages, **options)
-    log_usage('translate_json', target['code'], f'{src["code"]}_{target["code"]}', usage['prompt_tokens'], usage['completion_tokens'])
+    log_usage('translate_json', target['code'], f'{prompt_cfg.LANG.code}_{target["code"]}', usage['prompt_tokens'], usage['completion_tokens'])
 
     response_json = json.loads(response)
 
-    return response_json
+    return response_json, usage
 
 def translate_json(prompt_cfg: PromptConfig, json_dict, src, target, ignore_existing=True):
 

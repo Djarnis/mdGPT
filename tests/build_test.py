@@ -30,8 +30,13 @@ def cli_args_file():
 
 
 def test_build_file(cli_args_file, monkeypatch):
+    target_path = './example-test/en/index.md'
+    file_path = Path(target_path)
+    if file_path.exists():
+        file_path.unlink()
+
     monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_file)
     cli()
 
-    indexfile = Path('./example-test/en/index.md')
+    indexfile = Path(target_path)
     assert indexfile.exists()

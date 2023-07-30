@@ -34,10 +34,21 @@ def cli_args_da_file():
 
 
 def test_translate_file(cli_args_da_file, monkeypatch):
+    target_path = './example-test/da/index.md'
+    url_path = './example-test/.mdgpt-urls/en_da.json'
+
+    for f in [target_path, url_path]:
+        file_path = Path(f)
+        if file_path.exists():
+            file_path.unlink()
+
     monkeypatch.setattr('sys.argv', ["prog_name"] + cli_args_da_file)
     cli()
 
-    indexfile = Path('./example-test/da/index.md')
+    indexfile = Path(target_path)
+    assert indexfile.exists()
+
+    indexfile = Path(url_path)
     assert indexfile.exists()
 
 
