@@ -1,5 +1,5 @@
 [tool.blue]
-line-length = 120
+line-length = 130
 exclude = '''
 /(
   | .git
@@ -11,7 +11,7 @@ exclude = '''
 '''
 
 [tool.ruff]
-line-length = 120
+line-length = 130
 
 [tool.poetry]
 name = "mdgpt"
