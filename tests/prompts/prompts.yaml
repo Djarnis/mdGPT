@@ -69,3 +69,14 @@ MARKDOWN_PROMPT:
     prompt: |
       Translate all given values from {lang_name} ({lang_code}) to {target_lang_name} ({target_lang_code}).
       Respond in valid markdown format.
+
+FIELD_KEYS:
+  - title
+  - heading
+  - description
+  - keywords
+  - teaser
+
+FIELD_KEYS_DELETE:
+  - permalink
+  - url_history

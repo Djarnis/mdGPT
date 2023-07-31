@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from mdgpt import cli
 
 
@@ -7,7 +6,7 @@ from mdgpt import cli
 def cli_args():
     return [
         'debug',
-        'tests/prompts',
+        'tests/prompts/prompts',
     ]
 
 

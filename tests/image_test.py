@@ -7,7 +7,7 @@ from mdgpt import cli
 def cli_args():
     return [
         'image',
-        'tests/prompts',
+        'tests/prompts/prompts',
         '--file',
         'index.md',
     ]

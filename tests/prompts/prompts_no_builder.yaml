@@ -1,0 +1,82 @@
+LANGUAGE: en
+ROOT_DIR: example-test
+
+MODEL:
+  temperature: 0.2
+  engine: gpt-3.5-turbo
+  max_tokens: 2048
+
+# WEBSITE_BUILDER:
+#   variables:
+#     title: the fictive product "AIMarkdownTranslator"
+#   system_prompt: |
+#     Only reply in valid markdown with frontmatter.
+#     No explanations. No notes.
+#     Language: {lang_name}
+#     Markdown Document:
+#     ---
+#     # Frontmatter attributes:
+#     title: Title of webpage
+#     description: Short meta description
+#     ---
+#     <!-- markdown content -->
+#   user_suffix: |
+#     Respond in valid markdown format including all provided frontmatter attributes.
+
+#   steps:
+#     - prompt: |
+#         Write the homepage content for {title} in {lang_name} ({lang_code}).
+#       destination: index.md
+#     - prompt: |
+#         Write the "About Us" page content for a fictive team behind {title} in {lang_name} ({lang_code}).
+#       destination: about.md
+#     - prompt: |
+#         Write the history for {title} in {lang_name} ({lang_code}), starting in 2019 with 5 major milestones.
+#       destination: history.md
+
+URL_PROMPT:
+  - role: system
+    prompt: |
+      Only reply in valid json.
+      No explanations. No notes.
+      Language: {lang_name}
+      JSON document:
+      {content}
+  - role: user
+    prompt: |
+      Translate all keys in the JSON document.
+      The keys are in {lang_name} ({lang_code}) (some in english though).
+      They are url paths for a website in {lang_name}.
+      I need you to fill out the missing values with a translated {target_lang_name} ({target_lang_code}) version.
+      Should contain no special characters (hyphens and slashes are ok, as are dots in file extensions (like .md) if any).
+      Respond in the same format as the JSON input given, with the `key` as the json key and the (translated) `value` as the value.
+      Example translating from english to danish:
+      "about.md": "om-os.md"
+
+MARKDOWN_PROMPT:
+  - role: system
+    prompt: |
+      Only reply in valid markdown with frontmatter.
+      No explanations. No notes.
+      Language: {lang_name}
+      Markdown Document:
+      ---
+      # Frontmatter can be anything or nothing
+      {frontmatter}
+      ---
+      {content}
+  - role: user
+    prompt: |
+      Translate all given values from {lang_name} ({lang_code}) to {target_lang_name} ({target_lang_code}).
+      Respond in valid markdown format.
+
+FIELD_KEYS:
+  - title
+  - heading
+  - description
+  - keywords
+  - teaser
+
+FIELD_DELETE:
+  - permalink
+  - url_history

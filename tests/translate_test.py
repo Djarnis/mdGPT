@@ -2,13 +2,11 @@ import pytest
 from pathlib import Path
 from mdgpt import cli
 
-# pytest tests/translate_test.py -s
-
 
 def get_args(lang):
     return [
         'translate',
-        'tests/prompts',
+        'tests/prompts/prompts',
         '--target',
         lang,
     ]
@@ -77,3 +75,17 @@ def test_translate_fr(cli_args_fr, monkeypatch):
 
     indexfile = Path('./example-test/fr/index.md')
     assert indexfile.exists()
+
+
+@pytest.fixture
+def cli_args_xx():
+    return get_args('xx')
+
+
+def test_translate_xx(cli_args_xx, monkeypatch):
+    monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_xx)
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        cli()
+
+    assert pytest_wrapped_e.type == SystemExit
+    assert pytest_wrapped_e.value.code == 1
