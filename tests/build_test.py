@@ -17,8 +17,7 @@ def test_build(cli_args_test_build, monkeypatch):
 
     # Add a README.md file ...
     readme_file = Path('./example-test/en/README.md')
-    if not readme_file.exists():
-        readme_file.write_text('This is a README.md file')
+    readme_file.write_text('This is a README.md file')
 
     indexfile = Path('./example-test/en/index.md')
     assert indexfile.exists()
