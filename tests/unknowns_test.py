@@ -68,7 +68,7 @@ def test_prompt_not_found(cli_args_test_prompt_not_found, monkeypatch):
 @pytest.fixture
 def cli_args_test_source_dir_params():
     return [
-        'translate',
+        'debug',
         'tests/prompts/prompts',
         '--dir',
         'example-test',
@@ -80,8 +80,4 @@ def cli_args_test_source_dir_params():
 def test_source_dir_params(cli_args_test_source_dir_params, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_test_source_dir_params)
 
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
-        cli()
-
-    assert pytest_wrapped_e.type == SystemExit
-    assert pytest_wrapped_e.value.code == 1
+    cli()

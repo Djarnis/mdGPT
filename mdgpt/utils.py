@@ -1,5 +1,4 @@
 import os
-import yaml
 import pycountry
 import openai
 import glob
@@ -8,6 +7,7 @@ import json
 from pathlib import Path
 
 from mdgpt.models import PromptConfig
+from mdgpt.models import ChatGPTModel
 
 
 def urlize(text):
@@ -24,17 +24,6 @@ def log_usage(action, target, file, prompt_tokens, completion_tokens):
 
     with logger.open('a') as f:
         f.write(f'{target};{file};{prompt_tokens};{completion_tokens}\n')
-
-
-def load_prompt(prompt_file):
-    try:
-        with open(prompt_file, 'r') as f:
-            prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
-    except FileNotFoundError:
-        print(f'Prompt file {prompt_file} not found.')
-        exit(1)
-
-    return prompt
 
 
 def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_tokens=1024 * 2, n=1):
@@ -73,37 +62,24 @@ def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_toke
         raise e
 
 
-def get_gpt_options(gpt_model):
+def get_gpt_options(gpt_model: ChatGPTModel):
     options = {}
 
     if gpt_model is None:
         return options
 
-    if isinstance(gpt_model, dict):
-        if gpt_model.get('engine'):
-            options['model'] = gpt_model['engine']
-        if gpt_model.get('temperature'):
-            options['temperature'] = gpt_model['temperature']
-        if gpt_model.get('max_tokens'):
-            options['max_tokens'] = gpt_model['max_tokens']
-    else:
-        if gpt_model.engine:
-            options['model'] = gpt_model.engine
-        if gpt_model.temperature:
-            options['temperature'] = gpt_model.temperature
-        if gpt_model.max_tokens:
-            options['max_tokens'] = gpt_model.max_tokens
+    if gpt_model.engine:
+        options['model'] = gpt_model.engine
+    if gpt_model.temperature:
+        options['temperature'] = gpt_model.temperature
+    if gpt_model.max_tokens:
+        options['max_tokens'] = gpt_model.max_tokens
 
     return options
 
 
 def get_language_name(lang_code):
-    try:
-        lang = pycountry.languages.get(alpha_2=lang_code)
-    except Exception as e:
-        print(f'An error occurred: {e}')
-        exit(1)
-
+    lang = pycountry.languages.get(alpha_2=lang_code)
     if lang is None:
         print(f'Language {lang_code} not found.', lang)
         exit(1)
@@ -136,6 +112,8 @@ def get_url_matrices(cfg: PromptConfig):
         url_matrix[target] = url_map
         missing_matrix[target] = missing
         lang_matrix[target] = get_lang_dict(target)
+
+    return lang_matrix, url_matrix, missing_matrix
 
 
 def get_json_to_translate(prompt_cfg: PromptConfig, json_dict, target):

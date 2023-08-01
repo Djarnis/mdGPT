@@ -12,10 +12,8 @@ from mdgpt.models import PromptConfig
 from mdgpt.models import get_prompt_config
 from mdgpt.build import get_build_tasks
 from mdgpt.build import build_step
-from mdgpt.utils import get_json_to_translate
-from mdgpt.utils import get_url_map
-from mdgpt.utils import get_lang_dict
 from mdgpt.utils import get_markdown_files
+from mdgpt.utils import get_url_matrices
 from mdgpt.translate import save_json_translated
 from mdgpt.translate import translate_missing_json
 from mdgpt.translate import get_translation_tasks
@@ -28,7 +26,6 @@ load_dotenv()
 
 
 def cli():
-
     args = parse_args()
     cfg = get_prompt_config(args.prompt, **vars(args))
 
@@ -44,6 +41,7 @@ def cli():
         func(cfg)
     else:
         print('[red]Unknown action')
+        raise SystemExit(1)
 
 
 def parse_args():
@@ -55,7 +53,7 @@ def parse_args():
     parser.add_argument('-l', '--lang', dest='lang', type=str, required=False, help='Src lang in ISO 639-1 2-letter code')
     parser.add_argument('-s', '--source-dir', dest='source_dir', type=str, help='Optional src dir. Defaults to lang')
     parser.add_argument('-t', '--target', dest='target', type=str, required=False, help='Target lang in ISO 639-1')
-
+    parser.add_argument('--no-cache', help='Flag to ignore cache', dest='ignore_cache', action='store_true')
     return parser.parse_args()
 
 
@@ -112,14 +110,10 @@ def _translate(cfg: PromptConfig):
     errors = skips = oks = 0
 
     # Build url maps for each target language
-    lang_matrix, url_matrix, missing_matrix = {}, {}, {}
-    for target in cfg.TARGET_LANGUAGES:
-        url_hashes = get_url_map(cfg)
-        url_map, missing = get_json_to_translate(cfg, url_hashes, target)
+    lang_matrix, url_matrix, missing_matrix = get_url_matrices(cfg)
 
-        url_matrix[target] = url_map
-        missing_matrix[target] = missing
-        lang_matrix[target] = get_lang_dict(target)
+    exit_code = 0
+    exit_msg = ''
 
     # Execute translation tasks
     try:
@@ -133,8 +127,8 @@ def _translate(cfg: PromptConfig):
                 result, usage = _translate_js(
                     cfg,
                     i,
-                    target,
                     total_tasks,
+                    target,
                     url_matrix[target],
                     missing_matrix[target],
                     lang_matrix[target],
@@ -155,9 +149,12 @@ def _translate(cfg: PromptConfig):
                 errors += 1
 
     except KeyboardInterrupt:
-        print('Interrupted!')
+        print('[red]Aborted!')
+
     except Exception as e:
-        print('An error occurred:', e)
+        errors += 1
+        exit_code = 1
+        exit_msg = f'An error occurred: {e}'
 
     print('---')
     print('prompt_tokens:', prompt_tokens)
@@ -168,8 +165,12 @@ def _translate(cfg: PromptConfig):
     print(f'[green]oks: {oks}')
     print(f'[red]errors: {errors}')
 
+    if exit_code > 0:
+        print(f'[red]{exit_msg}')
+        raise SystemExit(exit_code)
 
-def _translate_js(cfg: PromptConfig, i, target, total_tasks, url_map, missing, target_lang):
+
+def _translate_js(cfg: PromptConfig, i: int, total_tasks: int, target: str, url_map: dict, missing: dict, target_lang: dict):
     print_details = f'{i+1}/{total_tasks} Translating file urls {cfg.LANGUAGE} -> {target} ...'
     print(print_details, end='', flush=True)   # end='\r',
 
@@ -191,7 +192,7 @@ def _translate_js(cfg: PromptConfig, i, target, total_tasks, url_map, missing, t
         return 'ok', usage
 
 
-def _translate_md(cfg: PromptConfig, i, total_tasks, file, target, target_lang, url_map):
+def _translate_md(cfg: PromptConfig, i: int, total_tasks: int, file: str, target: str, target_lang: dict, url_map: dict):
     # Check if file exists
     root = Path(cfg.ROOT_DIR)
     target_path = get_target_file(file, root, target, url_map)
@@ -200,18 +201,12 @@ def _translate_md(cfg: PromptConfig, i, total_tasks, file, target, target_lang, 
 
     print(print_details, end='', flush=True)   # end='\r',
     if target_path.exists():
-        skip = True
-        if cfg.FILE:
-            if cfg.FILE == file:
-                skip = False
-
+        skip = False if cfg.FILE and cfg.FILE == file else True
         if skip:
             print(f'[yellow]{print_details} Skip!')
             return 'skip', None
 
     if usage := translate_markdown_file(cfg, file, target_lang, url_map):
-        # prompt_tokens += usage['prompt_tokens']
-        # completion_tokens += usage['completion_tokens']
         log_usage('translate_md', target, file, usage['prompt_tokens'], usage['completion_tokens'])
 
         print(f'[green]{print_details} ok!')

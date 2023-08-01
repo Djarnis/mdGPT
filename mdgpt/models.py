@@ -51,6 +51,7 @@ class PromptConfig(BaseModel):
     FIELD_KEYS: List[str] = None
     FIELD_KEYS_DELETE: List[str] = None
     LANG: LangModel = None
+    IGNORE_CACHE: bool = False
 
     @field_validator('LANGUAGE')
     def language_must_be_iso(cls, v):
@@ -58,22 +59,26 @@ class PromptConfig(BaseModel):
             raise ValueError('LANGUAGE must be an ISO 639-1 two-letter language code')
         return v
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if self.LANGUAGE is not None:
+            self.LANG = LangModel(
+                code=self.LANGUAGE,
+                name=get_language_name(self.LANGUAGE),
+                directory=self.SOURCE_DIR or self.LANGUAGE,
+            )
+
+
+def get_language_name(lang_code):
+    lang = pycountry.languages.get(alpha_2=lang_code)
+    if lang is None:
+        print(f'Language {lang_code} not found :/', lang)
+        exit(1)
+    return lang.name
+
 
 def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
-    def get_language_name(lang_code):
-        lang = None
-        try:
-            lang = pycountry.languages.get(alpha_2=lang_code)
-        except Exception as e:
-            print(f'An error occurred: {e}')
-            exit(1)
-
-        if lang is None:
-            print(f'Language {lang_code} not found.', lang)
-            exit(1)
-
-        return lang.name
-
     try:
         with open(f'{prompt_file}.yaml', 'r') as f:
             prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
@@ -97,14 +102,14 @@ def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
     if kwargs.get('file'):
         prompt['FILE'] = kwargs['file']
 
+    if kwargs.get('ignore_cache'):
+        prompt['IGNORE_CACHE'] = True
+
     try:
         cfg = PromptConfig(**prompt)
 
     except ValidationError as e:
-        print(e)
+        print(f'[red]{e}')
         exit(1)
 
-    cfg.LANG = LangModel(
-        code=cfg.LANGUAGE, name=get_language_name(cfg.LANGUAGE), directory=cfg.SOURCE_DIR or cfg.LANGUAGE
-    )
     return cfg
