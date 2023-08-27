@@ -88,9 +88,7 @@ def get_language_name(lang_code):
 
 
 def get_url_map(prompt_cfg: PromptConfig):
-    files = get_markdown_files(
-        Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE)
-    )
+    files = get_markdown_files(Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE))
     # print('Files:', prompt_cfg.LANGUAGE, len(files))
 
     # Translate urls
@@ -120,7 +118,7 @@ def get_json_to_translate(prompt_cfg: PromptConfig, json_dict, target):
     filename = f'{prompt_cfg.LANGUAGE}_{target}.json'
     src_file = Path(f'{prompt_cfg.ROOT_DIR}/.mdgpt-urls/{filename}')
 
-    if src_file.exists():
+    if src_file.exists() and prompt_cfg.IGNORE_CACHE is False:
         # print(f'Loading existing file {src_file}')
         src_json = json.loads(src_file.read_text())
 

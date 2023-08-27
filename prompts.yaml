@@ -4,11 +4,6 @@ ROOT_DIR: example
 MODEL:
   temperature: 0.2
   engine: gpt-3.5-turbo
-  # engine: gpt-3.5-turbo-16k
-  # max_tokens: 2048
-  # max_tokens: 3072
-  # max_tokens: 4096
-  # 1024 * 8 8.192
 
 WEBSITE_BUILDER:
   variables:
@@ -67,7 +62,7 @@ URL_PROMPT:
       Should contain no special characters (hyphens and slashes are ok, as are dots in file extensions (like .md) if any).
       Respond in the same format as the JSON input given, with the `key` as the json key and the (translated) `value` as the value.
       Example translating from English to Danish:
-      "about.md": "om-os.md"
+      "about-us.md": "om-os.md"
 
 MARKDOWN_PROMPT:
   - role: system

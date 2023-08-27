@@ -3,6 +3,7 @@ import pycountry
 
 from pydantic import BaseModel, ValidationError, field_validator
 from typing import List
+from typing import Union
 
 
 class LangModel(BaseModel):
@@ -22,10 +23,39 @@ class ChatGPTPrompt(BaseModel):
     prompt: str
 
 
+class ChatGPTPromptMessage(BaseModel):
+    role: str = 'user'
+    content: str
+
+
 class ChatGPTStepPrompt(BaseModel):
     role: str = 'user'
     prompt: str
     destination: str
+
+
+class ChatGPTMessages(BaseModel):
+    messages: List[ChatGPTPromptMessage]
+
+    @classmethod
+    def from_yaml(cls, prompt_file: str, **kwargs):
+        try:
+            with open(f'{prompt_file}.yaml', 'r') as f:
+                prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
+
+        except FileNotFoundError:
+            print(f'Prompt file {prompt_file} not found.')
+            exit(1)
+
+        if prompt.get('messages') is None:
+            print(f'Prompt file {prompt_file} must have a "messages" key.')
+            exit(1)
+
+        messages = []
+        for msg in prompt.get('messages'):
+            messages.append(ChatGPTPromptMessage(**msg))
+
+        return ChatGPTMessages(messages=messages)
 
 
 class WebsiteBuilder(BaseModel):
@@ -35,6 +65,9 @@ class WebsiteBuilder(BaseModel):
     system_prompt: str = ''
     steps: List[ChatGPTStepPrompt]
     variables: dict = {}
+
+    def get_tasks(self):
+        return self.steps
 
 
 class PromptConfig(BaseModel):
@@ -48,10 +81,42 @@ class PromptConfig(BaseModel):
     MARKDOWN_PROMPT: List[ChatGPTPrompt]
     ONLY_INDEXES: bool = False
     FILE: str = None
-    FIELD_KEYS: List[str] = None
+    FIELD_KEYS: List[Union[str, dict]] = None
     FIELD_KEYS_DELETE: List[str] = None
     LANG: LangModel = None
     IGNORE_CACHE: bool = False
+
+    @classmethod
+    def from_yaml(cls, prompt_file: str, **kwargs):
+        try:
+            with open(f'{prompt_file}.yaml', 'r') as f:
+                prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
+
+        except FileNotFoundError:
+            print(f'Prompt file {prompt_file} not found.')
+            exit(1)
+
+        for kw in ['source_dir', 'file', 'ignore_cache']:
+            if kwargs.get(kw):
+                prompt[kw.upper()] = kwargs[kw]
+
+        if kwargs.get('lang'):
+            prompt['LANGUAGE'] = kwargs['lang']
+
+        if kwargs.get('dir'):
+            prompt['ROOT_DIR'] = kwargs['dir']
+
+        if kwargs.get('target'):
+            prompt['TARGET_LANGUAGES'] = [kwargs['target']]
+
+        try:
+            cfg = PromptConfig(**prompt)
+
+        except ValidationError as e:
+            print(f'[red]{e}')
+            exit(1)
+
+        return cfg
 
     @field_validator('LANGUAGE')
     def language_must_be_iso(cls, v):
@@ -76,40 +141,3 @@ def get_language_name(lang_code):
         print(f'Language {lang_code} not found :/', lang)
         exit(1)
     return lang.name
-
-
-def get_prompt_config(prompt_file: str, **kwargs) -> PromptConfig:
-    try:
-        with open(f'{prompt_file}.yaml', 'r') as f:
-            prompt = yaml.load(f, Loader=yaml.loader.SafeLoader)
-
-    except FileNotFoundError:
-        print(f'Prompt file {prompt_file} not found.')
-        exit(1)
-
-    if kwargs.get('lang'):
-        prompt['LANGUAGE'] = kwargs['lang']
-
-    if kwargs.get('source_dir'):
-        prompt['SOURCE_DIR'] = kwargs['source_dir']
-
-    if kwargs.get('dir'):
-        prompt['ROOT_DIR'] = kwargs['dir']
-
-    if kwargs.get('target'):
-        prompt['TARGET_LANGUAGES'] = [kwargs['target']]
-
-    if kwargs.get('file'):
-        prompt['FILE'] = kwargs['file']
-
-    if kwargs.get('ignore_cache'):
-        prompt['IGNORE_CACHE'] = True
-
-    try:
-        cfg = PromptConfig(**prompt)
-
-    except ValidationError as e:
-        print(f'[red]{e}')
-        exit(1)
-
-    return cfg

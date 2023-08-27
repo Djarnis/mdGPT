@@ -1,4 +1,4 @@
-# mdGPT - Mark Down General Purpose Transformer
+# mdGPT - Markdown General Purpose Transformer
 
 Translate markdown files using OpenAI ChatGPT, and generate localized copies of each file.
 
@@ -28,7 +28,7 @@ Use the example `WEBSITE_BUILDER` option from the prompts to build some example 
 mdgpt build example
 ```
 
-Translate these markdown files into Finish (fi) versions:
+Translate these newly created markdown files into Finish (fi) versions:
 
 ```bash
 mdgpt translate example --target fi
@@ -69,8 +69,11 @@ This option is used for building mark down documents, given the example instruct
 
 ```yaml
 WEBSITE_BUILDER:
-    title: The AI Markdown Translator
-    description: Translate markdown files for websites
+    variables:
+        title: the fictive product "AI Markdown Translator"
+        tone: sarcastic passive aggressive
+        year_founded: 2019
+        major_milestones: 3
     system_prompt: |
         Only reply in valid markdown with frontmatter.
         No explanations. No notes.
@@ -82,32 +85,78 @@ WEBSITE_BUILDER:
         description: Short meta description
         ---
         <!-- markdown content -->
+
+    # This will be appended as a last line to all step prompts
     user_suffix: |
         Respond in valid markdown format including all provided frontmatter attributes.
+        It should be in a {tone} tone.
 
     steps:
         - prompt: |
-              Write the homepage content for the fictive product "The AI Markdown Translator" in {lang[name]} ({lang[code]}).
-          destination: index.md
+            Write the homepage content for {title} in {lang_name} ({lang_code}).
+        destination: index.md
         - prompt: |
-              Write the "About Us" page content for a fictive team behind the fictive product "The AI Markdown Translator" in {lang[name]} ({lang[code]}).
-          destination: about.md
+            Write the "About Us" page content for a fictive team behind {title} in {lang_name} ({lang_code}).
+        destination: about.md
         - prompt: |
-              Write the history for the fictive product "The AI Markdown Translator" in {lang[name]} ({lang[code]}), starting in 2019 with 5 major milestones.
-          destination: history.md
+            Write the history for {title} in {lang_name} ({lang_code}), starting in {year_founded} with {major_milestones} major milestones.
+        destination: history.md
+        - prompt: |
+            Write a contact page for {title} in {lang_name} ({lang_code}). Make the headquarter be at some fancy addres in Silicon Valley.
+        destination: contact.md
 ```
 
 #### URL_PROMPT
 
 This prompt is used when translating file paths.
 
+```yaml
+URL_PROMPT:
+    - role: system
+      prompt: |
+          Only reply in valid json.
+          No explanations. No notes.
+          Language: {lang_name}
+          JSON document:
+          {content}
+    - role: user
+      prompt: |
+          Translate all keys in the JSON document.
+          The keys are in {lang_name} ({lang_code}).
+          They are url paths for a website in {lang_name}.
+          I need you to fill out the missing values with a translated {target_lang[name]} ({target_lang_code}) version.
+          Should contain no special characters (hyphens and slashes are ok, as are dots in file extensions (like .md) if any).
+          Respond in the same format as the JSON input given, with the `key` as the json key and the (translated) `value` as the value.
+          Example translating from English to Danish:
+          "about-us.md": "om-os.md"
+```
+
 #### MARKDOWN_PROMPT
 
 This prompt is used when translating markdown files.
 
+```yaml
+MARKDOWN_PROMPT:
+    - role: system
+      prompt: |
+          Only reply in valid markdown with frontmatter.
+          No explanations. No notes.
+          Language: {lang_name}
+          Markdown Document:
+          ---
+          # Frontmatter can be anything or nothing, but always make sure to include the frontmatter dashes.
+          {frontmatter}
+          ---
+          {content}
+    - role: user
+      prompt: |
+          Translate all given values from {lang_name} ({lang_code}) to {target_lang[name]} ({target_lang_code}).
+          Respond in valid markdown format.
+```
+
 #### ONLY_INDEXES
 
-Optional boolean value, if you only want `index.md` files translated.
+Optional boolean value, if you only want `index.md` files translated when translating URL's.
 
 ```yaml
 ONLY_INDEXES: True
@@ -128,13 +177,31 @@ FIELD_KEYS:
     - teaser
 ```
 
+#### TARGET_LANGUAGES
+
+List of languages you want to target.
+
+```yaml
+TARGET_LANGUAGES:
+    - da
+    - de
+    - fr
+    - es
+    - it
+    - zh
+```
+
+You can run translations on all target languages by not specifying `--target`.
+
+```bash
+mdgpt translate example
+```
+
 ---
 
 ### Using repo source and Poetry:
 
 #### Step 1: Install Poetry
-
-Poetry is a tool for dependency management and packaging in Python. It allows you to declare the libraries your project depends on and it will manage (install/update) them for you.
 
 On Unix-based systems like Linux and MacOS, you can install Poetry by using the following command in your terminal:
 
@@ -193,7 +260,11 @@ _Please note:_
 
 #### Step 4: Install mdGPT
 
-From the project directory, install mdGPT and its dependencies:
+From the project directory, build and install mdGPT and its dependencies:
+
+```bash
+poetry build
+```
 
 ```bash
 poetry install
@@ -223,7 +294,7 @@ Which will create these files in the ./example/en directory:
 To translate the markdown files into Finish (fi) versions, run this command:
 
 ```bash
-poetry run mdgot translate example --target fi
+poetry run mdgpt translate example --target fi
 ```
 
 And you should get a `/fi` subdirectory ./example/fi/ containing these files, translated from their original English (en) source:

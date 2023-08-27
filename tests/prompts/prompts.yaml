@@ -29,7 +29,10 @@ WEBSITE_BUILDER:
       destination: index.md
     - prompt: |
         Write the "About Us" page content for a fictive team behind {title} in {lang_name} ({lang_code}).
-      destination: about.md
+      destination: info/about.md
+    - prompt: |
+        Write the "Prices" page content for {title} in {lang_name} ({lang_code}).
+      destination: info/prices/index.md
     - prompt: |
         Write the history for {title} in {lang_name} ({lang_code}), starting in 2019 with 5 major milestones.
       destination: history.md

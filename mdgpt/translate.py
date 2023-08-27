@@ -4,8 +4,10 @@ import yaml
 
 from pathlib import Path
 from rich import print
+from typing import List
 
 from mdgpt.models import PromptConfig
+from mdgpt.models import ChatGPTPromptMessage
 from mdgpt.utils import get_url_map
 from mdgpt.utils import (
     urlize,
@@ -52,12 +54,57 @@ def generate_frontmatter(post, field_keys, field_keys_delete=None):
     field_dict = {}
     if field_keys is not None and len(field_keys) > 0:
         for field in field_keys:
+            print('field', field)
+            print('type field', type(field))
+
+            if isinstance(field, dict):
+                print('field.keys()', field.keys())
+
+                for k in field.keys():
+                    print('k', k)
+                    field_vals = field.get(k)
+                    print('field_vals', field_vals)
+
+                    if post.get(k) is not None:
+                        print('k is something!')
+                        val = post.get(k)
+                        print('val', type(val))
+
+                        if isinstance(val, list):
+                            print('val is a list!')
+
+                            field_dict[k] = []
+
+                            for v in val:
+                                print('v', v)
+                                print('v', type(v))
+
+                                if isinstance(v, dict):
+                                    print('v is a dict!')
+                                    list_dict = {}
+                                    for fv in field_vals:
+                                        print('fv', fv)
+                                        if v.get(fv) is not None:
+                                            print('fv is something!', v.get(fv))
+                                            # field_dict[fv] = v.get(fv)
+                                            list_dict[fv] = v.get(fv)
+                                    field_dict[k].append(list_dict)
+
+                        # field_value = post[k]
+                        # field_dict[k] = field_value
+
+                # continue ...
+                continue
+
             if field in post.keys():
+                print('wooop')
                 if post[field] is not None:
                     field_value = post[field]
                     field_dict[field] = field_value
     else:
         field_dict = post.metadata
+
+    # print('field_dict', field_dict)
 
     if field_keys_delete is not None and len(field_keys_delete) > 0:
         for field in field_keys_delete:
@@ -65,6 +112,7 @@ def generate_frontmatter(post, field_keys, field_keys_delete=None):
                 del field_dict[field]
 
     frontmatter = yaml.dump(field_dict)
+    print('frontmatter', frontmatter)
     return frontmatter
 
 
@@ -158,18 +206,35 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ign
 
     if prompt_cfg.FIELD_KEYS is not None and len(prompt_cfg.FIELD_KEYS) > 0:
         for field in prompt_cfg.FIELD_KEYS:
-            if new_matter.get(field):
-                post[field] = new_matter[field]
+            if isinstance(field, dict):
+                for k in field.keys():
+                    field_vals = field.get(k)
+                    if post.get(k) is not None:
+                        val = post.get(k)
+                        if isinstance(val, list):
+                            for ix, v in enumerate(val):
+                                if isinstance(v, dict):
+                                    for fv in field_vals:
+                                        if new_matter[k][ix].get(fv) is not None:
+                                            post[k][ix][fv] = new_matter[k][ix][fv]
+
+                                        # print('post[k]', post[k])
+                            # print('Continuing ...')
+                            continue
+            if isinstance(field, str):
+                if new_matter.get(field):
+                    post[field] = new_matter[field]
     else:
         post.metadata = new_matter
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
+    print('Writing to', target_path)
     target_path.write_text(frontmatter.dumps(post))
 
     return usage
 
 
-def save_json_translated(prompt_cfg: PromptConfig, json_dict, target):
+def save_json_translated(prompt_cfg: PromptConfig, json_dict: dict, target: dict):
     filename = f'{prompt_cfg.LANGUAGE}_{target}.json'
     src_file = Path(f'{prompt_cfg.ROOT_DIR}/.mdgpt-urls/{filename}')
 
@@ -178,30 +243,34 @@ def save_json_translated(prompt_cfg: PromptConfig, json_dict, target):
 
 
 def translate_missing_json(prompt_cfg: PromptConfig, json_dict, target):
+    content = json.dumps(json_dict, indent=2)
     messages = [
-        {
-            'role': msg.role,
-            'content': msg.prompt.format(
+        ChatGPTPromptMessage(
+            role=msg.role,
+            content=msg.prompt.format(
                 lang_name=prompt_cfg.LANG.name,
                 lang_code=prompt_cfg.LANG.code,
                 target_lang=target,
                 target_lang_name=target['name'],
                 target_lang_code=target['code'],
-                content=json.dumps(json_dict, indent=2),
+                content=content,
             ),
-        }
+        )
         for msg in prompt_cfg.URL_PROMPT
     ]
+
+    return translate_messages(prompt_cfg, messages, target['code'])
+
+
+def translate_messages(prompt_cfg: PromptConfig, messages: List[ChatGPTPromptMessage], target: str):
     options = get_gpt_options(prompt_cfg.MODEL)
-    response, usage = get_chat_response(messages, **options)
+    prompts = [m.model_dump() for m in messages]
+    response, usage = get_chat_response(prompts, **options)
     log_usage(
         'translate_json',
-        target['code'],
-        f'{prompt_cfg.LANG.code}_{target["code"]}',
+        target,
+        f'{prompt_cfg.LANG.code}_{target}',
         usage['prompt_tokens'],
         usage['completion_tokens'],
     )
-
-    response_json = json.loads(response)
-
-    return response_json, usage
+    return json.loads(response), usage
