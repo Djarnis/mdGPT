@@ -29,9 +29,7 @@ def cli_args_test_wrong_openai_key():
 
 def test_wrong_openai_key(cli_args_test_wrong_openai_key, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_test_wrong_openai_key)
-
-    envs = {'OPENAI_API_KEY': 'wrong_key'}
-    monkeypatch.setattr(os, 'environ', envs)
+    monkeypatch.setattr(os, 'environ', {'OPENAI_API_KEY': 'wrong_key'})
 
     # with pytest.raises(AuthenticationError) as pytest_wrapped_e:
     #     cli()

@@ -19,10 +19,10 @@ def cli_args_da():
 
 def test_translate(cli_args_da, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_da)
+
     cli()
 
-    indexfile = Path('./example-test/da/index.md')
-    assert indexfile.exists()
+    assert Path('./example-test/da/index.md').exists()
 
 
 @pytest.fixture
@@ -33,22 +33,17 @@ def cli_args_da_file():
 
 
 def test_translate_file(cli_args_da_file, monkeypatch):
-    target_path = './example-test/da/index.md'
-    url_path = './example-test/.mdgpt-urls/en_da.json'
+    target_path = Path('./example-test/da/index.md')
+    url_path = Path('./example-test/.mdgpt-urls/en_da.json')
 
-    for f in [target_path, url_path]:
-        file_path = Path(f)
-        if file_path.exists():
-            file_path.unlink()
+    [f.unlink() for f in [target_path, url_path] if f.exists()]
 
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_da_file)
+
     cli()
 
-    indexfile = Path(target_path)
-    assert indexfile.exists()
-
-    indexfile = Path(url_path)
-    assert indexfile.exists()
+    assert Path(target_path).exists()
+    assert Path(url_path).exists()
 
 
 @pytest.fixture
@@ -58,10 +53,10 @@ def cli_args_de():
 
 def test_translate_de(cli_args_de, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_de)
+
     cli()
 
-    indexfile = Path('./example-test/de/index.md')
-    assert indexfile.exists()
+    assert Path('./example-test/de/index.md').exists()
 
 
 @pytest.fixture
@@ -71,10 +66,10 @@ def cli_args_fr():
 
 def test_translate_fr(cli_args_fr, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_fr)
+
     cli()
 
-    indexfile = Path('./example-test/fr/index.md')
-    assert indexfile.exists()
+    assert Path('./example-test/fr/index.md').exists()
 
 
 @pytest.fixture
@@ -84,6 +79,7 @@ def cli_args_xx():
 
 def test_translate_xx(cli_args_xx, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_xx)
+
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         cli()
 

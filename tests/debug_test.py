@@ -12,4 +12,5 @@ def cli_args():
 
 def test_debug(cli_args, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args)
+
     cli()

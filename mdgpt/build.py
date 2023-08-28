@@ -22,26 +22,19 @@ def build_step(prompt_cfg: PromptConfig, step):
 
     wcfg = prompt_cfg.WEBSITE_BUILDER
 
-    user_suffix = wcfg.user_suffix.strip()
-    system_prompt = wcfg.system_prompt.strip()
-
     step_prompt = '\n'.join(
         [
             step.prompt.strip(),
-            user_suffix,
+            wcfg.user_suffix.strip(),
         ]
     )
 
     variables = wcfg.variables
-
     variables['lang_name'] = prompt_cfg.LANG.name
     variables['lang_code'] = prompt_cfg.LANG.code
 
     messages = [
-        {
-            'role': 'system',
-            'content': system_prompt.format_map(DefaultDictFormatter(variables)).strip(),
-        },
+        {'role': 'system', 'content': wcfg.system_prompt.format_map(DefaultDictFormatter(variables)).strip()},
         {'role': 'user', 'content': step_prompt.format_map(DefaultDictFormatter(variables))},
     ]
 

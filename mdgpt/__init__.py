@@ -120,24 +120,21 @@ def _translate(cfg: PromptConfig):
     counters = {'prompt_tokens': 0, 'completion_tokens': 0, 'errors': 0, 'skips': 0, 'oks': 0}
 
     # Build url maps for each target language
-    lang_matrix, url_matrix, missing_matrix = get_url_matrices(cfg)
+    languages, urls, missing = get_url_matrices(cfg)
 
     exit_code = 0
     exit_msg = ''
 
     # Execute translation tasks
-    if 1 == 2:
-        # Without catching for debugging purposes :)
-        _translation_loop(cfg, counters, lang_matrix, url_matrix, missing_matrix, tasks)
+    try:
+        _translation_loop(cfg, counters, languages, urls, missing, tasks)
 
-    else:
-        try:
-            _translation_loop(cfg, counters, lang_matrix, url_matrix, missing_matrix, tasks)
-        except KeyboardInterrupt:
-            print('[red]Aborted!')
-        except Exception as e:
-            exit_code = 1
-            exit_msg = f'An error occurred: {e}'
+    except KeyboardInterrupt:
+        print('[red]Aborted!')
+
+    except Exception as e:
+        exit_code = 1
+        exit_msg = f'An error occurred: {e}'
 
     print('---')
     print('prompt_tokens:', counters['prompt_tokens'])
@@ -153,30 +150,26 @@ def _translate(cfg: PromptConfig):
         raise SystemExit(exit_code)
 
 
-def _translation_loop(cfg: PromptConfig, counters: dict, lang_matrix: dict, url_matrix: dict, missing_matrix: dict, tasks: list):
+def _translation_loop(cfg: PromptConfig, counters: dict, languages: dict, urls: dict, missing: dict, tasks: list):
     total_tasks = len(tasks)
 
     for i in track(range(total_tasks), description='Translating ...'):
         task = tasks[i]
         action, target, file = task.split(':')[:3]
 
-        target_lang = lang_matrix[target]
+        target_lang = languages[target]
 
         if action == 'js':
-            result, usage = _translate_js(cfg, i, total_tasks, url_matrix[target], missing_matrix[target], lang_matrix[target])
+            result, usage = _translate_js(cfg, i, total_tasks, urls[target], missing[target], languages[target])
         elif action == 'md':
-            result, usage = _translate_md(cfg, i, total_tasks, file, target_lang, url_matrix[target])
+            result, usage = _translate_md(cfg, i, total_tasks, file, target_lang, urls[target])
 
         if usage:
             counters['prompt_tokens'] += usage['prompt_tokens']
             counters['completion_tokens'] += usage['completion_tokens']
 
-        if result == 'ok':
-            counters['oks'] += 1
-        elif result == 'skip':
-            counters['skips'] += 1
-        elif result == 'error':
-            counters['errors'] += 1
+        if result in ['ok', 'skip', 'error']:
+            counters[f'{result}s'] += 1
 
 
 def _translate_js(cfg: PromptConfig, idx: int, total_tasks: int, url_map: dict, missing: dict, target_lang: dict):
@@ -426,7 +419,7 @@ def _translate_wip(cfg: PromptConfig):
 
         return missing
 
-    lang_matrix, url_matrix, missing_matrix = get_url_matrices(cfg)
+    languages, url_matrix, missing_matrix = get_url_matrices(cfg)
     menus_files = ['footer', 'main', 'top', 'ui']
 
     # Get sentences to translate ...
@@ -452,12 +445,11 @@ def _translate_wip(cfg: PromptConfig):
             sentence_matrics[target] = translations
             continue
 
-        # return
         variables = {
             'lang_name': cfg.LANG.name,
             'lang_code': cfg.LANG.code,
-            'target_lang_name': lang_matrix[target]['name'],
-            'target_lang_code': lang_matrix[target]['code'],
+            'target_lang_name': languages[target]['name'],
+            'target_lang_code': languages[target]['code'],
             'content': json.dumps(missing, indent=2),
         }
         prompt_messages = [
@@ -566,12 +558,6 @@ def _translate_wip(cfg: PromptConfig):
 
                     if found_stuff:
                         print('k found_stuff', k, matter)
-                    # button
-                    # url
-
-                    # forum
-                    # url
-                    # _replace_links(v, url_matrix[target])
 
                 if mdfile.endswith('index.md') and k in ['sections']:
                     # replace absolute urls ...
@@ -579,11 +565,7 @@ def _translate_wip(cfg: PromptConfig):
                         src_prefix = f'/{cfg.LANGUAGE}/'
                         target_prefix = f'/{target}/'
                         if slug.startswith(src_prefix):
-                            # print('slug:', slug)
                             new_slug = f'{target_prefix}{slug[len(src_prefix):]}'
-                            # print('new_slug:', new_slug)
-                            # v[slug] = f'/{target}{slug}'
-
                             matter[k][i] = new_slug
 
             post = frontmatter.Post(content, **matter)

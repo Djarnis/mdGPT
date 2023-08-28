@@ -8,7 +8,7 @@ MODEL:
 WEBSITE_BUILDER:
   variables:
     title: the fictive product "AI Markdown Translator"
-    tone: sarcastic pasive aggressive
+    tone: sarcastic passive aggressive
     year_founded: 2019
     major_milestones: 3
 

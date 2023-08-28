@@ -28,8 +28,9 @@ def log_usage(action, target, file, prompt_tokens, completion_tokens):
 
 def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_tokens=1024 * 2, n=1):
     if os.getenv('OPENAI_API_KEY') is None:
-        print('Please set OPENAI_API_KEY and OPENAI_ORGANIZATION environment variables.')
+        print('Please set OPENAI_API_KEY environment variable.')
         exit(1)
+
     openai.api_key = os.getenv('OPENAI_API_KEY')
     try:
         completions = openai.ChatCompletion.create(
@@ -48,17 +49,14 @@ def get_chat_response(messages, model='gpt-3.5-turbo', temperature=0.2, max_toke
 
     except openai.error.AuthenticationError as e:
         print(f'OpenAI AuthenticationError: {e}')
-        # exit(1)
         raise e
 
     except openai.error.OpenAIError as e:
         print(f'OpenAI Error: {e}')
-        # exit(1)
         raise e
 
     except Exception as e:
         print(f'An error occurred: {e}')
-        # exit(1)
         raise e
 
 
@@ -89,9 +87,7 @@ def get_language_name(lang_code):
 
 def get_url_map(prompt_cfg: PromptConfig):
     files = get_markdown_files(Path(prompt_cfg.ROOT_DIR, prompt_cfg.SOURCE_DIR if prompt_cfg.SOURCE_DIR else prompt_cfg.LANGUAGE))
-    # print('Files:', prompt_cfg.LANGUAGE, len(files))
 
-    # Translate urls
     if prompt_cfg.ONLY_INDEXES:
         url_hash = {urlize(f): '' for f in files if f.endswith('index.md')}
     else:
@@ -119,7 +115,6 @@ def get_json_to_translate(prompt_cfg: PromptConfig, json_dict, target):
     src_file = Path(f'{prompt_cfg.ROOT_DIR}/.mdgpt-urls/{filename}')
 
     if src_file.exists() and prompt_cfg.IGNORE_CACHE is False:
-        # print(f'Loading existing file {src_file}')
         src_json = json.loads(src_file.read_text())
 
         for k, v in json_dict.items():

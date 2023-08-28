@@ -13,14 +13,13 @@ def cli_args_test_build():
 
 def test_build(cli_args_test_build, monkeypatch):
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_test_build)
+
     cli()
 
     # Add a README.md file ...
-    readme_file = Path('./example-test/en/README.md')
-    readme_file.write_text('This is a README.md file')
+    Path('./example-test/en/README.md').write_text('This is a README.md file')
 
-    indexfile = Path('./example-test/en/index.md')
-    assert indexfile.exists()
+    assert Path('./example-test/en/index.md').exists()
 
 
 @pytest.fixture
@@ -34,16 +33,14 @@ def cli_args_test_build_file():
 
 
 def test_build_file(cli_args_test_build_file, monkeypatch):
-    target_path = './example-test/en/index.md'
-    file_path = Path(target_path)
-    if file_path.exists():
-        file_path.unlink()
+    target_path = Path('./example-test/en/index.md')
+    target_path.unlink() if target_path.exists() else ...
 
     monkeypatch.setattr('sys.argv', ['prog_name'] + cli_args_test_build_file)
+
     cli()
 
-    indexfile = Path(target_path)
-    assert indexfile.exists()
+    assert Path(target_path).exists()
 
 
 @pytest.fixture

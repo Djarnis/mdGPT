@@ -15,7 +15,7 @@ line-length = 130
 
 [tool.poetry]
 name = "mdgpt"
-version = "0.3.3"
+version = "0.3.4"
 description = "Translate markdown files using OpenAI ChatGPT, and generate localized copies of each file."
 authors = ["Jeppe Bårris <jeppe@barris.dk>"]
 license = "MIT"
