@@ -54,38 +54,38 @@ def generate_frontmatter(post, field_keys, field_keys_delete=None):
     field_dict = {}
     if field_keys is not None and len(field_keys) > 0:
         for field in field_keys:
-            print('field', field)
-            print('type field', type(field))
+            # print('field', field)
+            # print('type field', type(field))
 
             if isinstance(field, dict):
-                print('field.keys()', field.keys())
+                # print('field.keys()', field.keys())
 
                 for k in field.keys():
-                    print('k', k)
+                    # print('k', k)
                     field_vals = field.get(k)
-                    print('field_vals', field_vals)
+                    # print('field_vals', field_vals)
 
                     if post.get(k) is not None:
-                        print('k is something!')
+                        # print('k is something!')
                         val = post.get(k)
-                        print('val', type(val))
+                        # print('val', type(val))
 
                         if isinstance(val, list):
-                            print('val is a list!')
+                            # print('val is a list!')
 
                             field_dict[k] = []
 
                             for v in val:
-                                print('v', v)
-                                print('v', type(v))
+                                # print('v', v)
+                                # print('v', type(v))
 
                                 if isinstance(v, dict):
-                                    print('v is a dict!')
+                                    # print('v is a dict!')
                                     list_dict = {}
                                     for fv in field_vals:
-                                        print('fv', fv)
+                                        # print('fv', fv)
                                         if v.get(fv) is not None:
-                                            print('fv is something!', v.get(fv))
+                                            # print('fv is something!', v.get(fv))
                                             # field_dict[fv] = v.get(fv)
                                             list_dict[fv] = v.get(fv)
                                     field_dict[k].append(list_dict)
@@ -97,7 +97,7 @@ def generate_frontmatter(post, field_keys, field_keys_delete=None):
                 continue
 
             if field in post.keys():
-                print('wooop')
+                # print('wooop')
                 if post[field] is not None:
                     field_value = post[field]
                     field_dict[field] = field_value
@@ -112,7 +112,7 @@ def generate_frontmatter(post, field_keys, field_keys_delete=None):
                 del field_dict[field]
 
     frontmatter = yaml.dump(field_dict)
-    print('frontmatter', frontmatter)
+    # print('frontmatter', frontmatter)
     return frontmatter
 
 
@@ -228,7 +228,7 @@ def translate_markdown_file(prompt_cfg: PromptConfig, file, target, url_map, ign
         post.metadata = new_matter
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    print('Writing to', target_path)
+    # print('Writing to', target_path)
     target_path.write_text(frontmatter.dumps(post))
 
     return usage

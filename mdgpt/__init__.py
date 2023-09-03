@@ -3,6 +3,7 @@ import frontmatter
 import yaml
 import json
 import os
+import re
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -258,8 +259,8 @@ def _translate_wip(cfg: PromptConfig):
         if item.get(attr) is None:
             return
 
-        url = _get_url(item.get(attr), target, url_map)
-        print('urlurlurl', item.get(attr), url)
+        # url = _get_url(item.get(attr), target, url_map)
+        # print('urlurlurl', item.get(attr), url)
 
         href = _strip_src_href(item.get(attr))
 
@@ -268,7 +269,7 @@ def _translate_wip(cfg: PromptConfig):
 
             if target_href is not None:
                 target_href = f'/{target}/{target_href}'
-                print('target_href:', target_href)
+                # print('target_href:', target_href)
                 item[attr] = target_href
 
     def _strip_src_href(href):
@@ -286,7 +287,7 @@ def _translate_wip(cfg: PromptConfig):
             with open(f'{root}/{menu_file}.yaml', 'r') as f:
                 menu = yaml.load(f, Loader=yaml.loader.SafeLoader)
 
-            print('type:', type(menu))
+            # print('type:', type(menu))
             if isinstance(menu, dict):
                 for item in menu:
                     label = menu[item].get('label')
@@ -511,18 +512,17 @@ def _translate_wip(cfg: PromptConfig):
             # load markdown file ...
             md_path = Path(cfg.ROOT_DIR, target, mdfile)
             matter, content = frontmatter.parse(md_path.read_text())
-            # print('matter', matter)
-
             for k, v in matter.items():
                 found_stuff = False
                 if k in ['link', 'href', 'url', 'button', 'buttons', 'forum']:
-                    print(f'{mdfile}: k: {k} v: {v}')
+                    # print(f'{mdfile}: k: {k} v: {v}')
 
                     if isinstance(v, str):
-                        print('v is str')
+                        # print('v is str')
+                        pass
 
                     elif isinstance(v, dict):
-                        print('v is dict')
+                        # print('v is dict')
                         # for kk, vv in v.items():
                         #     if kk in ['link', 'href', 'url']:
                         #         print('kk:', kk, vv)
@@ -532,15 +532,15 @@ def _translate_wip(cfg: PromptConfig):
                         for attr in ['link', 'href', 'url']:
                             if v.get(attr) is None:
                                 continue
-                            print('attr', attr)
+                            # print('attr', attr)
                             found_stuff = True
                             _replace_url(v, attr, target, url_matrix[target])
 
                     elif isinstance(v, list):
-                        print('v is list')
+                        # print('v is list')
                         for i, item in enumerate(v):
                             if isinstance(item, dict):
-                                print('item is dict')
+                                # print('item is dict')
                                 # for kk, vv in item.items():
                                 #     if kk in ['link', 'href', 'url']:
                                 #         print('kk:', kk, vv)
@@ -552,21 +552,58 @@ def _translate_wip(cfg: PromptConfig):
                                     if old_val is None:
                                         continue
 
-                                    print('attr', attr)
+                                    # print('attr', attr)
                                     found_stuff = True
                                     _replace_url(item, attr, target, url_matrix[target])
 
-                    if found_stuff:
-                        print('k found_stuff', k, matter)
+                    # if found_stuff:
+                    #     print('k found_stuff', k, matter)
 
                 if mdfile.endswith('index.md') and k in ['sections']:
                     # replace absolute urls ...
+                    # print('REPLACE ABSURLS!')
                     for i, slug in enumerate(v):
                         src_prefix = f'/{cfg.LANGUAGE}/'
                         target_prefix = f'/{target}/'
-                        if slug.startswith(src_prefix):
-                            new_slug = f'{target_prefix}{slug[len(src_prefix):]}'
-                            matter[k][i] = new_slug
+                        # print('slug', slug)
+                        if slug.startswith((src_prefix, target_prefix)):
+                            # TODO: Get correct slug for target language!
+                            # 1: Clean up slug: remove /da/**/__
+                            # 2: Get translated slug
+                            # 3: Replace slug with target prefix, translated slug, and special folder / file
+                            new_slug = None
+                            pattern = r'^\/(\w{2})(?:\/([^_]+)?)?(__[^\/]+\/[^\/]+)'
+
+                            # Extracting the parts using the regex pattern
+                            matches = re.match(pattern, slug)
+                            if matches:
+                                lang_part, slug_part, component_part = matches.groups()
+                                # print('lang_part, slug_part, component_part', lang_part, slug_part, component_part)
+
+                                if slug_part:
+                                    if slug_part.endswith('/'):
+                                        slug_part = slug_part.rstrip('/')
+
+                                    # print('slug_part', slug_part)
+
+                                    t_slug = url_matrix[target].get(slug_part)
+                                    # print('t_slug', t_slug)
+
+                                    if t_slug:
+                                        new_slug = f'{target_prefix}{t_slug}/{component_part}'
+
+                                    # print(json.dumps(url_matrix[target], indent=2))
+                                else:
+                                    new_slug = f'{target_prefix}{component_part}'
+                            else:
+                                # print('NO MATCH!')
+                                pass
+
+                            # print('slug', slug)
+                            # print('new_slug', new_slug)
+                            # new_slug = f'{target_prefix}{slug[len(src_prefix):]}'
+                            if new_slug:
+                                matter[k][i] = new_slug
 
             post = frontmatter.Post(content, **matter)
 
